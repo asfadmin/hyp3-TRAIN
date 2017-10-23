@@ -171,6 +171,14 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 # Load the weather model data
                 (Temp,e,H,P,longrid,latgrid,xx,yy,lon0360_flag) = aps_load_merra(wfile) 
                 
+                print "H[:,:,0] {}".format(H[:,:,0])
+                print "H[:,:,1] {}".format(H[:,:,1])
+                print "H[:,:,2] {}".format(H[:,:,2])
+                print "H[:,:,3] {}".format(H[:,:,3])
+                print "H[:,:,4] {}".format(H[:,:,4])
+                print "H[:,:,5] {}".format(H[:,:,5])
+    
+
                 print "H {}".format(H)
                 print "P {}".format(P)
                 
@@ -193,8 +201,8 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 
 
 		# define weather model grid nodes
-                latlist = np.reshape(latgrid[:,:,1],-1,order='F')
-                lonlist = np.reshape(longrid[:,:,1],-1,order='F')
+                latlist = np.reshape(latgrid[:,:,1],-1)
+                lonlist = np.reshape(longrid[:,:,1],-1)
                 
                 print latlist
                 print lonlist
@@ -202,8 +210,11 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 print "latlist shape {}".format(latlist.shape)
                 print "lonlist shape {}".format(lonlist.shape)
                 
-                xlist = np.reshape(xx,-1)
-                ylist = np.reshape(yy,-1)
+                xlist = np.reshape(xx,-1,order='F')
+                ylist = np.reshape(yy,-1,order='F')
+                
+                print xlist
+                print ylist
                 
                 lat_res = np.abs(np.diff(np.unique(latgrid)))*1.5
                 lat_res = lat_res[0]
@@ -240,7 +251,6 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 ylist = ylist[ix]
                 latlist = latlist[ix]
                 lonlist = lonlist[ix]
-#                print lonlist
                 ulatlist = np.unique(latlist)
                 ulonlist = np.unique(lonlist)
                 numy = int(len(ulatlist))
@@ -248,20 +258,41 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 uxlist = np.unique(xlist)
                 uylist = np.unique(ylist)
   
+  		print xlist
+                print ylist
+                print latlist
+                print lonlist
+                print ulatlist
+                print ulonlist
+                print numx, numy
+                print uxlist
+                print uylist
+  
                 # map of g with latitude
                 g = 9.80616*(1. - 0.002637*np.cos(2*np.deg2rad(latgrid)) + 0.0000059* np.square(np.cos(2.*np.deg2rad(latgrid))))
+                
+                print g[:,:,0]
+                
                 
                 # map of Re with latitude
                 Re = np.sqrt(1./((np.square(np.cos(np.deg2rad(latgrid)))/np.square(Rmax)) + (np.square(np.sin(np.deg2rad(latgrid)))/np.square(Rmin))))
                 
+                print Re[:,:,0]
+                
                 # Calculate Geometric Height, Z
                 Z = (H*Re)/(g/g0*Re - H)
 
+                print "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
+		print H[:,:,0]
+                print Z[:,:,0]
+
                 midx = int(round(np.mean(uxlist)))
                 midy = int(round(np.mean(uylist)))
-                glocal = g[midy,midx,1]
-                Rlocal = Re[midy,midx,1]
-
+                
+                print midx,midy
+                
+                glocal = g[midx,midy,0]
+                Rlocal = Re[midx,midy,0]
 
                 print "glocal {}".format(glocal)
                 print "Rlocal {}".format(Rlocal)
@@ -269,10 +300,6 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 cdstack = np.zeros((numy,numx,cdslices))
                 cdstack_dry = np.zeros((numy,numx,cdslices))
                 cdstack_wet = np.zeros((numy,numx,cdslices))
-               
-                K4 = k2-(Rd*k1*Rv) 
-                K5 = 10**-6*((k1*Rd)/glocal)
-                ptr = zref/zincr-1
 
                 # Interpolate Temp P and e from 0:20:15000 m
                 # then integrate using trapz to estimate delay as function of height
@@ -283,11 +310,19 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                         xn = uxlist[i]
                         yn = uylist[j]
                         
+                        print "xn {}".format(xn)
+                        print "yn {}".format(yn)
+                        
                         #interpolate at res zincr before doing integration
-                        X = np.squeeze(Z[yn,xn,:])
-                        Ye = np.squeeze(e[yn,xn,:])
+                        X = np.squeeze(Z[xn,yn,:])
+                        print X
+                        
+                        Ye = np.squeeze(e[xn,yn,:])
+                        print Ye
+                        
                         f = sp.interpolate.interp1d(X,Ye,kind='cubic',bounds_error=False)
                         YeI = f(XI)*100
+                        print YeI[5:30]
                         
                         Yp = np.squeeze(P[yn,xn,:])
                         f = sp.interpolate.interp1d(X,Yp,kind='cubic',bounds_error=False)
@@ -297,12 +332,12 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                         f = sp.interpolate.interp1d(X,YT,kind='cubic',bounds_error=False)
                         YTI = f(XI)
                         
-                        tmp1 = K4*YeI/YTI + k3*YeI/(YTI*YTI)
+                        tmp1 = (k2-(Rd*k1*Rv))*YeI/YTI + k3*YeI/(YTI*YTI)
                         Lw = (10**-6)*-1*np.flipud(sp.integrate.cumtrapz(np.flipud(tmp1),np.flipud(XI),initial=0))
                         f = sp.interpolate.interp1d(XI,Lw,kind='cubic',bounds_error=False)
                         LwI = f(cdI)
 
-			Ld = K5*(YPI-YPI[ptr])
+			Ld = 10**-6*((k1*Rd/glocal)*(YPI-YPI[zref/zincr]))
                         f = sp.interpolate.interp1d(XI,Ld,kind='cubic',bounds_error=False)
                         LdI = f(cdI)
                         

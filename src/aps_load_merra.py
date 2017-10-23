@@ -146,13 +146,13 @@ def aps_load_merra(wfile):
 #    print "Temp shape {}".format(Temp.shape)
 #    print "Wvapour shape {}".format(WVapour.shape)
 #    print "H shape {}".format(H.shape)
-  
-    print "Temp[:,:,0] {}".format(Temp[:,:,0])
-    print "Temp[:,:,1] {}".format(Temp[:,:,1])
-    print "Temp[:,:,2] {}".format(Temp[:,:,2])
-    print "Temp[:,:,3] {}".format(Temp[:,:,3])
-    print "Temp[:,:,4] {}".format(Temp[:,:,4])
-    print "Temp[:,:,5] {}".format(Temp[:,:,5])
+    
+    print "H[:,:,0] {}".format(H[:,:,0])
+    print "H[:,:,1] {}".format(H[:,:,1])
+    print "H[:,:,2] {}".format(H[:,:,2])
+    print "H[:,:,3] {}".format(H[:,:,3])
+    print "H[:,:,4] {}".format(H[:,:,4])
+    print "H[:,:,5] {}".format(H[:,:,5])
     
     
     return (Temp,WVapour,H,Pressure,longrid,latgrid,xx,yy,lon0360_flag)
