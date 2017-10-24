@@ -92,10 +92,9 @@ def get_date_list():
 def times(utc,datelist):
     t_before = int(np.floor(float(utc)/21600))
     t_after = int(np.ceil(float(utc)/21600))
-    
-    temp = utc - 21600*6*t_before
-    denom = (21600*(6*t_after-6*t_before))
-    f_after = temp/denom
+
+    temp = utc-21600*t_before
+    f_after = temp/21600
     if np.isnan(f_after):
         f_after = 1
     f_before = 1 - f_after

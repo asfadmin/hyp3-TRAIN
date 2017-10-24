@@ -43,7 +43,6 @@ import aps_weather_model_lib as aps
 import saa_func_lib as saa
 import shutil
 from netCDF4 import Dataset as NetCDFFile 
-import matplotlib.pyplot as plt
 import numpy as np
 
 # from mpl_toolkits.basemap import Basemap
@@ -147,12 +146,12 @@ def aps_load_merra(wfile):
 #    print "Wvapour shape {}".format(WVapour.shape)
 #    print "H shape {}".format(H.shape)
     
-    print "H[:,:,0] {}".format(H[:,:,0])
-    print "H[:,:,1] {}".format(H[:,:,1])
-    print "H[:,:,2] {}".format(H[:,:,2])
-    print "H[:,:,3] {}".format(H[:,:,3])
-    print "H[:,:,4] {}".format(H[:,:,4])
-    print "H[:,:,5] {}".format(H[:,:,5])
+#    print "H[:,:,0] {}".format(H[:,:,0])
+#    print "H[:,:,1] {}".format(H[:,:,1])
+#    print "H[:,:,2] {}".format(H[:,:,2])
+#    print "H[:,:,3] {}".format(H[:,:,3])
+#    print "H[:,:,4] {}".format(H[:,:,4])
+#    print "H[:,:,5] {}".format(H[:,:,5])
     
     
     return (Temp,WVapour,H,Pressure,longrid,latgrid,xx,yy,lon0360_flag)

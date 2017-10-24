@@ -116,7 +116,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     vertres = 100      # vertical resolution for comparing dem to vert profiles of delay
 
     XI= [int(i) for i in range(0,zref+1,zincr)]
-    print "len(XI) {}".format(len(XI))
+#    print "len(XI) {}".format(len(XI))
     
     path = aps.get_param('merra_datapath')
     demfile = aps.get_param('demfile')
@@ -126,10 +126,10 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
      
     dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(demfile,geo_ref_file)
     
-    print xmin, xmax
-    print ymin, ymax
-    print smpres
-    print nncols, nnrows
+#    print xmin, xmax
+#    print ymin, ymax
+#    print smpres
+#    print nncols, nnrows
     
     lonmin = np.floor(xmin)-1
     lonmax= np.ceil(xmax)+1
@@ -139,7 +139,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     maxdem = np.ceil(np.max(np.max(dem))/100)*100+100
     cdslices = int(maxdem/vertres) + 1
     cdI = [x for x in range(0,int(maxdem)+1,vertres)]
-    print "cdI {}".format(cdI)
+#    print "cdI {}".format(cdI)
     
 
     if cdslices != len(cdI):
@@ -153,6 +153,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     print "Using {} slices".format(cdslices)
     
     date,time,frac = aps.times(utc,dates)
+   
     input_file_names = aps.file_names(date,time,path)
     length = len(input_file_names)/2
     
@@ -171,58 +172,58 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 # Load the weather model data
                 (Temp,e,H,P,longrid,latgrid,xx,yy,lon0360_flag) = aps_load_merra(wfile) 
                 
-                print "H[:,:,0] {}".format(H[:,:,0])
-                print "H[:,:,1] {}".format(H[:,:,1])
-                print "H[:,:,2] {}".format(H[:,:,2])
-                print "H[:,:,3] {}".format(H[:,:,3])
-                print "H[:,:,4] {}".format(H[:,:,4])
-                print "H[:,:,5] {}".format(H[:,:,5])
+#                print "H[:,:,0] {}".format(H[:,:,0])
+#                print "H[:,:,1] {}".format(H[:,:,1])
+#                print "H[:,:,2] {}".format(H[:,:,2])
+#                print "H[:,:,3] {}".format(H[:,:,3])
+#                print "H[:,:,4] {}".format(H[:,:,4])
+#                print "H[:,:,5] {}".format(H[:,:,5])
     
 
-                print "H {}".format(H)
-                print "P {}".format(P)
+#                print "H {}".format(H)
+#                print "P {}".format(P)
                 
  		# deal with NANs
                 (Temp,e) = aps_weather_model_nan_check(Temp,e,P,longrid,latgrid)                
 
-                print "Temp[:,:,0] {}".format(Temp[:,:,0])
-                print "Temp[:,:,1] {}".format(Temp[:,:,1])
-                print "Temp[:,:,2] {}".format(Temp[:,:,2])
-                print "Temp[:,:,3] {}".format(Temp[:,:,3])
-                print "Temp[:,:,4] {}".format(Temp[:,:,4])
-                print "Temp[:,:,5] {}".format(Temp[:,:,5])
+#                print "Temp[:,:,0] {}".format(Temp[:,:,0])
+#                print "Temp[:,:,1] {}".format(Temp[:,:,1])
+#                print "Temp[:,:,2] {}".format(Temp[:,:,2])
+#                print "Temp[:,:,3] {}".format(Temp[:,:,3])
+#                print "Temp[:,:,4] {}".format(Temp[:,:,4])
+#                print "Temp[:,:,5] {}".format(Temp[:,:,5])
 
-                print "e[:,:,0] {}".format(e[:,:,0])
-                print "e[:,:,1] {}".format(e[:,:,1])
-                print "e[:,:,2] {}".format(e[:,:,2])
-                print "e[:,:,3] {}".format(e[:,:,3])
-                print "e[:,:,4] {}".format(e[:,:,4])
-                print "e[:,:,5] {}".format(e[:,:,5])
+#                print "e[:,:,0] {}".format(e[:,:,0])
+#                print "e[:,:,1] {}".format(e[:,:,1])
+#                print "e[:,:,2] {}".format(e[:,:,2])
+#                print "e[:,:,3] {}".format(e[:,:,3])
+#                print "e[:,:,4] {}".format(e[:,:,4])
+#                print "e[:,:,5] {}".format(e[:,:,5])
 
 
 		# define weather model grid nodes
                 latlist = np.reshape(latgrid[:,:,1],-1)
                 lonlist = np.reshape(longrid[:,:,1],-1)
                 
-                print latlist
-                print lonlist
+#                print latlist
+#                print lonlist
                 
-                print "latlist shape {}".format(latlist.shape)
-                print "lonlist shape {}".format(lonlist.shape)
+#                print "latlist shape {}".format(latlist.shape)
+#                print "lonlist shape {}".format(lonlist.shape)
                 
                 xlist = np.reshape(xx,-1,order='F')
                 ylist = np.reshape(yy,-1,order='F')
                 
-                print xlist
-                print ylist
+#                print xlist
+#                print ylist
                 
                 lat_res = np.abs(np.diff(np.unique(latgrid)))*1.5
                 lat_res = lat_res[0]
                 lon_res = np.abs(np.diff(np.unique(longrid)))*1.5
                 lon_res = lon_res[0]
 
-                print "lat res {}".format(lat_res)
-                print "lon res {}".format(lon_res)
+#                print "lat res {}".format(lat_res)
+#                print "lon res {}".format(lon_res)
                 
                 if lon0360_flag == 'y':
                     if xmin < 0:
@@ -245,7 +246,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 #                print "ymax    {}".format(ymax)
 #                print "xmin    {}".format(xmin)
 #                print "xmax    {}".format(xmax)
-                print ix
+#                print ix
                 
                 xlist = xlist[ix]
                 ylist = ylist[ix]
@@ -258,44 +259,44 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 uxlist = np.unique(xlist)
                 uylist = np.unique(ylist)
   
-  		print xlist
-                print ylist
-                print latlist
-                print lonlist
-                print ulatlist
-                print ulonlist
-                print numx, numy
-                print uxlist
-                print uylist
+#  		print xlist
+#                print ylist
+#                print latlist
+#                print lonlist
+#                print ulatlist
+#                print ulonlist
+#                print numx, numy
+#                print uxlist
+#                print uylist
   
                 # map of g with latitude
                 g = 9.80616*(1. - 0.002637*np.cos(2*np.deg2rad(latgrid)) + 0.0000059* np.square(np.cos(2.*np.deg2rad(latgrid))))
                 
-                print g[:,:,0]
+#                print g[:,:,0]
                 
                 
                 # map of Re with latitude
                 Re = np.sqrt(1./((np.square(np.cos(np.deg2rad(latgrid)))/np.square(Rmax)) + (np.square(np.sin(np.deg2rad(latgrid)))/np.square(Rmin))))
                 
-                print Re[:,:,0]
+#                print Re[:,:,0]
                 
                 # Calculate Geometric Height, Z
                 Z = (H*Re)/(g/g0*Re - H)
 
-                print "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
-		print H[:,:,0]
-                print Z[:,:,0]
+#                print "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"
+#                print H[:,:,0]
+#                print Z[:,:,0]
 
                 midx = int(round(np.mean(uxlist)))
                 midy = int(round(np.mean(uylist)))
                 
-                print midx,midy
+#                print midx,midy
                 
                 glocal = g[midx,midy,0]
                 Rlocal = Re[midx,midy,0]
 
-                print "glocal {}".format(glocal)
-                print "Rlocal {}".format(Rlocal)
+#                print "glocal {}".format(glocal)
+#                print "Rlocal {}".format(Rlocal)
                 
                 cdstack = np.zeros((numy,numx,cdslices))
                 cdstack_dry = np.zeros((numy,numx,cdslices))
@@ -304,53 +305,56 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 # Interpolate Temp P and e from 0:20:15000 m
                 # then integrate using trapz to estimate delay as function of height
                 for i in range(numx):
-                    sys.stdout.write("processing line {} of {}".format(i+1,numx))
-                    sys.stdout.flush()
                     for j in range(numy):
                         xn = uxlist[i]
                         yn = uylist[j]
                         
-                        print "xn {}".format(xn)
-                        print "yn {}".format(yn)
+#                        print "xn {}".format(xn)
+#                        print "yn {}".format(yn)
                         
                         #interpolate at res zincr before doing integration
                         X = np.squeeze(Z[xn,yn,:])
-                        print X
+#                        print X
                         
                         Ye = np.squeeze(e[xn,yn,:])
-                        print Ye
+#                        print Ye
                         
-                        f = sp.interpolate.interp1d(X,Ye,kind='cubic',bounds_error=False)
-                        YeI = f(XI)*100
-                        print YeI[5:30]
+                        f = sp.interpolate.splrep(X,Ye)
+                        YeI = sp.interpolate.splev(XI,f,der=0)
+                        YeI = YeI * 100
+#                        print YeI[:30]
                         
                         Yp = np.squeeze(P[yn,xn,:])
-                        f = sp.interpolate.interp1d(X,Yp,kind='cubic',bounds_error=False)
-                        YPI = f(XI)*100
-                        
-                        YT = np.squeeze(Temp[yn,xn,:])
-                        f = sp.interpolate.interp1d(X,YT,kind='cubic',bounds_error=False)
-                        YTI = f(XI)
-                        
-                        tmp1 = (k2-(Rd*k1*Rv))*YeI/YTI + k3*YeI/(YTI*YTI)
-                        Lw = (10**-6)*-1*np.flipud(sp.integrate.cumtrapz(np.flipud(tmp1),np.flipud(XI),initial=0))
-                        f = sp.interpolate.interp1d(XI,Lw,kind='cubic',bounds_error=False)
-                        LwI = f(cdI)
+                        f = sp.interpolate.splrep(X,Yp)
+                        YPI = sp.interpolate.splev(XI,f,der=0)
+                        YPI = YPI * 100
+#                        print YPI[:30]
 
-			Ld = 10**-6*((k1*Rd/glocal)*(YPI-YPI[zref/zincr]))
-                        f = sp.interpolate.interp1d(XI,Ld,kind='cubic',bounds_error=False)
-                        LdI = f(cdI)
+
+                        YT = np.squeeze(Temp[yn,xn,:])
+                        f = sp.interpolate.splrep(X,YT)
+                        YTI = sp.interpolate.splev(XI,f,der=0)
+#                        print YTI[:30]
+
+                        tmp1 = (k2-(Rd*k1/Rv))*YeI/YTI + k3*YeI/(YTI*YTI)
+#                        print tmp1[:30]
+                        Lw = (10**-6)*-1*np.flipud(sp.integrate.cumtrapz(np.flipud(tmp1),np.flipud(XI),initial=0))
+#                        print Lw[:30]
                         
-                        print LdI
-                        print LwI
+                        f = sp.interpolate.splrep(XI,Lw)
+                        LwI = sp.interpolate.splev(cdI,f,der=0)
+			
+                        Ld = 10**-6*((k1*Rd/glocal)*(YPI-YPI[zref/zincr]))
+                        f = sp.interpolate.splrep(XI,Ld)
+                        LdI = sp.interpolate.splev(cdI,f,der=0)
+
+#                        print LdI
+#                        print LwI
                         
                         cdstack_dry[j,i,:] = LdI
                         cdstack_wet[j,i,:] = LwI
                 
-                        sys.stdout.write(".")
-                        sys.stdout.flush()
-                    print ""
-                    
+
                 xsmpres = (xmax-xmin)/nncols
                 ysmpres = (ymax-ymin)/nnrows
                 
@@ -360,28 +364,49 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 #                print "nncols {}".format(nncols)
 #                print "nnrows {}".format(nnrows)
         
-#        	print "Length of xivec {}".format(len(xivec))
+#                print "Length of xivec {}".format(len(xivec))
 #                print "Length of yivec {}".format(len(yivec))                
 
                 [xi,yi] = np.meshgrid(xivec,yivec)
                 ix_temp = np.diff(lonlist)
                 ix_temp = np.where(ix_temp!=0)
                 ixi_temp = ix_temp[0] + 1
-                lonlist_matrix = np.reshape(lonlist,(ixi_temp[0],-1))
-                latlist_matrix = np.reshape(latlist,(ixi_temp[0],-1))
+                lonlist_matrix = np.reshape(lonlist,(ixi_temp[0],-1),order='F')
+                latlist_matrix = np.reshape(latlist,(ixi_temp[0],-1),order='F')
 
+#                print lonlist_matrix
+#                print latlist_matrix
+                
                 cdstack_interp_dry = np.zeros((nnrows,nncols,cdslices))
+                sys.stdout.write("processing dry stack")
+                sys.stdout.flush()
                 for n in range(cdslices):
                     f = scipy.interpolate.interp2d(lonlist_matrix,latlist_matrix,cdstack_dry[:,:,n])
                     newslice = f(xivec,yivec)
                     cdstack_interp_dry[:,:,n]=np.flipud(newslice)
-                
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                print
+
+
+#                print cdstack_dry[:,:,0]
+#                print cdstack_interp_dry[:30,0,0]
+
                 # del cd_stack_interp_wet
                 cdstack_interp_wet = np.zeros((nnrows,nncols,cdslices))
+                sys.stdout.write("processing wet stack")
+                sys.stdout.flush()
                 for n in range(cdslices):
                     f = sp.interpolate.interp2d(lonlist_matrix,latlist_matrix,cdstack_wet[:,:,n])
                     newslice = f(xivec,yivec)
+#                    print newslice
                     cdstack_interp_wet[:,:,n]=np.flipud(newslice)
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+                print
+
+#                print cdstack_wet[:,:,0]
+#                print cdstack_interp_wet[:30,0,0]
                 
                 # keeping the coordinates in the same grid as the data
                 xi = np.flipud(xi)
@@ -394,11 +419,16 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 rounddem[dem<0] = 0
                 rounddem[np.isnan(dem)] = 0
                 
+#                print dem[:30,0]
+#                print rounddem[:30,0]
+                
                 for i in range(nnrows):
                     for j in range(nncols):
-                        wetcorrection[i,j] = cdstack_interp_wet[i,j,int(rounddem[i,j])+1]
-                        hydrcorrection[i,j] = cdstack_interp_dry[i,j,int(rounddem[i,j])+1]
-                        
+                        wetcorrection[i,j] = cdstack_interp_wet[i,j,int(rounddem[i,j])]
+                        hydrcorrection[i,j] = cdstack_interp_dry[i,j,int(rounddem[i,j])]
+                
+#                print wetcorrection[:30,0]
+                
                 del cdstack_interp_wet
                 del cdstack_interp_dry
                 
@@ -420,22 +450,30 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
             outfile_dry_after = path + "/" + date[d] + "/" + date[d] + '_ZHD_after.xyz'            
                 
             fid = open(outfile_wet_before,'wb')
-            data_write = np.array([np.reshape(xi,-1),np.reshape(yi,-1),np.reshape(wetcorrection1,-1)])
+            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(wetcorrection1,-1,order='F')])
+	    data_write = np.reshape(data_write,(3,-1))
+	    data_write = np.transpose(data_write)
             data_write.tofile(fid)
             fid.close()
             
             fid = open(outfile_wet_after,'wb')
-            data_write = np.array([np.reshape(xi,-1),np.reshape(yi,-1),np.reshape(wetcorrection2,-1)])
+            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(wetcorrection2,-1,order='F')])
+	    data_write = np.reshape(data_write,(3,-1))
+	    data_write = np.transpose(data_write)
             data_write.tofile(fid)
             fid.close()        
             
             fid = open(outfile_dry_before,'wb')
-            data_write = np.array([np.reshape(xi,-1),np.reshape(yi,-1),np.reshape(drycorrection1,-1)])
+            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(drycorrection1,-1,order='F')])
+	    data_write = np.reshape(data_write,(3,-1))
+	    data_write = np.transpose(data_write)
             data_write.tofile(fid)
             fid.close()
             
             fid = open(outfile_dry_after,'wb')
-            data_write = np.array([np.reshape(xi,-1),np.reshape(yi,-1),np.reshape(drycorrection2,-1)])
+            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(drycorrection2,-1,order='F')])
+	    data_write = np.reshape(data_write,(3,-1))
+	    data_write = np.transpose(data_write)
             data_write.tofile(fid)
             fid.close()
             
@@ -446,7 +484,9 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
             wetcorrection = wetcorrection * 100     # delay in CM
             outfile = path + "/" + date[d] + "/" + date[d] + '_ZWD.xyz'
             fid = open(outfile,'wb')
-            data_write = np.array([np.reshape(xi,-1),np.reshape(yi,-1),np.reshape(wetcorrection,-1)])
+            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(wetcorrection,-1,order='F')])
+	    data_write = np.reshape(data_write,(3,-1))
+	    data_write = np.transpose(data_write)
             data_write.tofile(fid)
             fid.close()
             del wetcorrection
@@ -458,7 +498,9 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
             hydrcorrection = hydrcorrection * 100   # delay in CM
             hydroutfile = path + "/" + date[d] + "/" + date[d] + '_ZHD.xyz'
             fid = open(hydroutfile,'wb')
-            data_write = np.array([np.reshape(xi,-1),np.reshape(yi,-1),np.reshape(hydrcorrection,-1)])
+            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(hydrcorrection,-1,order='F')])
+	    data_write = np.reshape(data_write,(3,-1))
+	    data_write = np.transpose(data_write)
             data_write.tofile(fid)
             fid.close()
             del hydrcorrection

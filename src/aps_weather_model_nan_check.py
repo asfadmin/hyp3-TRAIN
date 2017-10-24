@@ -47,14 +47,14 @@ def aps_weather_model_nan_check(Temp,e,P, longrid,latgrid):
     
     lon = longrid[:,:,1]
     lat = latgrid[:,:,1]
-    print lon
+#    print lon
     
     step_level = [i for i in range(len(Pressure_level)-1,-1,-1)]
     if Pressure_level[0]<Pressure_level[-1]:
         step_level = [i for i in range(len(Pressure_level))]
     dims = Temp.shape
 
-    print step_level
+#    print step_level
 
     n_pixels = dims[0] * dims[1]
     grid = np.zeros((n_pixels,2))
@@ -62,8 +62,8 @@ def aps_weather_model_nan_check(Temp,e,P, longrid,latgrid):
     grid[:,1] = lat.flatten()        
 
     for k in range(len(Pressure_level)):
-	print "============================================================"
-        print "Processing pressure_level {0} which is {1}".format(k,Pressure_level[k])
+#	print "============================================================"
+#        print "Processing pressure_level {0} which is {1}".format(k,Pressure_level[k])
 
 	
         test = np.squeeze(Temp[:,:,step_level[k]])
