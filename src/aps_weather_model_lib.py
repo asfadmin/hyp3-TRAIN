@@ -47,7 +47,7 @@ def get_param(target):
     exit(1)
 
 def get_range(target,geo_ref_file=None):
-    if geo_ref_file is not None:
+    if geo_ref_file is not None and ".tif" in geo_ref_file:
         print "Reading {TARG} from file {FILE}".format(TARG=target,FILE=geo_ref_file)
         if target == 'region_lat_range':
             reffile = glob.glob("*wgs84.tif")[0]
@@ -64,7 +64,7 @@ def get_range(target,geo_ref_file=None):
             mylist = [ullon,lrlon]
             return mylist
         else:
-            print "ERROR: Unknown parameter {PARM}".format(PARM=targer)
+            print "ERROR: Unknown parameter {PARM}".format(PARM=target)
             exit(1)
     else:
         print "Reading {TARG} from file params_aps.txt".format(TARG=target)
