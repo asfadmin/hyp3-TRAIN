@@ -116,9 +116,9 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     Rmax = 6378137 
     Rmin = 6356752
 
-    print "k1 {}".format(k1)
-    print "k2 {}".format(k2)
-    print "k3 {}".format(k3)
+#    print "k1 {}".format(k1)
+#    print "k2 {}".format(k2)
+#    print "k3 {}".format(k3)
     
     zref = 15000       # zref for integration- tropopause
     zincr = 15         # z increment spacing for vertical interpolation before integration
@@ -135,11 +135,11 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
      
     dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(demfile,geo_ref_file)
     
-    print xmin, xmax
-    print ymin, ymax
-    print smpres
-    print nncols, nnrows
-    print dem[:30]
+#    print xmin, xmax
+#    print ymin, ymax
+#    print smpres
+#    print nncols, nnrows
+#    print dem[:30]
     
     lonmin = np.floor(xmin)-1
     lonmax= np.ceil(xmax)+1
@@ -151,6 +151,9 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     cdI = [x for x in range(0,int(maxdem)+1,vertres)]
 #    print "cdI {}".format(cdI)
     
+    rounddem = np.round(dem/vertres)
+    rounddem[dem<0] = 0
+    rounddem[np.isnan(dem)] = 0
 
     if cdslices != len(cdI):
        print "ERROR: length mistmatch"
@@ -168,17 +171,18 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     length = len(input_file_names)/2
     
     for d in range(length):
-        print "Input weather files: {BEFORE} {AFTER}".format(BEFORE=input_file_names[d],AFTER=input_file_names[d+length])
         no_data = 0
         for kk in range(2):
             if kk==0:
                 wfile = input_file_names[d]
             else:
                 wfile = input_file_names[d+length]
-
+                
             if not os.path.isfile(wfile):
                 no_data = no_data + 1
             else:
+                print "Loading input weather file: {}".format(wfile)
+            
                 # Load the weather model data
                 (Temp,e,H,P,longrid,latgrid,xx,yy,lon0360_flag) = aps_load_merra(wfile) 
                 
@@ -347,21 +351,21 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 #                        print YTI[:30]
 
                         tmp1 = (k2-(Rd*k1/Rv))*YeI/YTI + k3*YeI/(YTI*YTI)
-                        print "tmp1 {}".format(tmp1[:30])
+#                        print "tmp1 {}".format(tmp1[:30])
                         Lw = (10**-6)*-1*np.flipud(sp.integrate.cumtrapz(np.flipud(tmp1),np.flipud(XI),initial=0))
-                        print "Lw {}".format(Lw[:30])
+#                        print "Lw {}".format(Lw[:30])
                         
                         f = sp.interpolate.splrep(XI,Lw)
                         LwI = sp.interpolate.splev(cdI,f,der=0)
 			
-                        print "XI {}".format(XI[:30])
-                        print "cdI {}".format(cdI[:30])
+#                        print "XI {}".format(XI[:30])
+#                        print "cdI {}".format(cdI[:30])
                         
                         Ld = 10**-6*((k1*Rd/glocal)*(YPI-YPI[zref/zincr]))
                         f = sp.interpolate.splrep(XI,Ld)
                         LdI = sp.interpolate.splev(cdI,f,der=0)
 
-			print("LwI {}".format(LwI))
+#			print("LwI {}".format(LwI))
                         
 #                        print LdI
 #                        print LwI
@@ -415,13 +419,23 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 cdstack_interp_wet = np.zeros((nnrows,nncols,cdslices))
                 sys.stdout.write("processing wet stack")
                 sys.stdout.flush()
+                
+                lonlist_matrix = lonlist_matrix[0,:]
+                latlist_matrix = latlist_matrix[:,0]
+                
+#                print lonlist_matrix
+#                print latlist_matrix
+                
                 for n in range(cdslices):
 #                    f = sp.interpolate.interp2d(lonlist_matrix,latlist_matrix,cdstack_wet[:,:,n])
-#                    newslice = f(xivec,yivec)
+
+                    f = sp.interpolate.RectBivariateSpline(latlist_matrix,lonlist_matrix,cdstack_wet[:,:,n],kx=1,ky=1,s=0)
+                    newslice = f(yivec,xivec)
+                    
 #                    print newslice
 
-                    tck = sp.interpolate.bisplrep(lonlist_matrix,latlist_matrix,cdstack_wet[:,:,n],s=3)
-                    newslice = sp.interpolate.bisplev(yivec,xivec,tck)
+#                    tck = sp.interpolate.bisplrep(lonlist_matrix,latlist_matrix,cdstack_wet[:,:,n],s=5)
+#                    newslice = sp.interpolate.bisplev(yivec,xivec,tck)
 
                     cdstack_interp_wet[:,:,n]=np.flipud(newslice)
                     sys.stdout.write(".")
@@ -431,6 +445,10 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 #                print cdstack_wet[:,:,0]
 #                print cdstack_interp_wet[:30,0,0]
                 
+#                cdstack_wet[:,:,0].tofile("cstack_wet.bin")
+#                cdstack_interp_wet[:,:,0].tofile("cdstack_interp_wet.bin")
+                
+                
                 # keeping the coordinates in the same grid as the data
                 xi = np.flipud(xi)
                 yi = np.flipud(yi)
@@ -438,9 +456,6 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 # Pull out delays from cdstack layers that match dem heights
                 wetcorrection = np.ones((nnrows,nncols))
                 hydrcorrection = np.ones((nnrows,nncols))
-                rounddem = np.round(dem/vertres)
-                rounddem[dem<0] = 0
-                rounddem[np.isnan(dem)] = 0
                 
 #                print dem[:30,0]
 #                print rounddem[:30,0]
@@ -469,8 +484,8 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
         
         where = np.argmin(wetcorrection2)
         
-        print "minimum wetcorrection2 {MINF} at {X}".format(MINF=minf,X=where)
-        print "maximum wetcorrection2 {}".format(maxf)
+#        print "minimum wetcorrection2 {MINF} at {X}".format(MINF=minf,X=where)
+#        print "maximum wetcorrection2 {}".format(maxf)
         
         
         if no_data == 0:
