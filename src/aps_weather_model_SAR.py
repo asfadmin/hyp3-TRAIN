@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 ###############################################################################
-# aps_weather_model.py 
+# aps_weather_model_SAR.py 
 #
 # Project:  APD TRAIN
 # Purpose:  Compute SAR delays from weather model data
@@ -49,10 +49,12 @@ import scipy.integrate
 import shutil
 from aps_load_merra import aps_load_merra
 from aps_weather_model_nan_check import aps_weather_model_nan_check
-import struct
 
-# from joblib import Parallel, delayed
+
+from joblib import Parallel, delayed
 # import multiprocessing
+from multiprocessing import Pool
+
 
 def get_DEM(demfile,geo_ref_file=None):
 
@@ -101,6 +103,19 @@ def get_DEM(demfile,geo_ref_file=None):
 
 #    return (data,xmin,xmax,ymin,ymax,demres,nncols,nnrows)
 
+def write_out_file(name,xi,yi,data):
+    fid = open(name,'wb')
+    data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(data,-1,order='F')])
+    data_write = np.reshape(data_write,(3,-1))
+    data_write = np.transpose(data_write)
+    data_write.tofile(fid)
+    fid.close()
+
+def inter2d(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,n):
+    tck = sp.interpolate.bisplrep(lonlist_matrix,latlist_matrix,cdstack[:,:,n],s=3)
+    newslice = sp.interpolate.bisplev(yivec,xivec,tck)
+    return newslice
+#    cdstack_interp_dry[:,:,n]=np.flipud(newslice)
 
 def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 
@@ -129,8 +144,8 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     
     path = aps.get_param('merra_datapath')
     demfile = aps.get_param('demfile')
-    utc = float(aps.get_param("UTC_sat"))
-    dates = aps.get_date_list()
+    utc = float(aps.get_param('UTC_sat'))
+    dates, tmp = aps.get_date_list()
     n_dates = len(dates)
      
     dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(demfile,geo_ref_file)
@@ -412,6 +427,14 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 print
 
 
+#                Parallel(n_jobs=8)(delayed(inter2d)(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,cdstack_interp_dry,n)
+#                           for n in range(cdslices))
+
+#                pool = Pool(processes=8)
+#                cdstack_interp_dry = [pool.apply(inter2d,args=(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,n)) for n in range(cdslices)]
+#                print "cdstack_interp_dry shape {}".format(cdstack_interp_dry.shape())
+
+
 #                print cdstack_dry[:,:,0]
 #                print cdstack_interp_dry[:30,0,0]
 
@@ -467,8 +490,8 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 
 #                print wetcorrection[:30,0]
                 
-                del cdstack_interp_wet
-                del cdstack_interp_dry
+#                del cdstack_interp_wet
+#                del cdstack_interp_dry
                 
                 if kk == 0:
                     wetcorrection1 = wetcorrection
@@ -490,52 +513,27 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
         
         if no_data == 0:
             
+            print "Writing output files"
+            
             outfile_wet_before = path + "/" + date[d] + "/" + date[d] + '_ZWD_before.xyz'
             outfile_wet_after = path + "/" + date[d] + "/" + date[d] + '_ZWD_after.xyz'
             
             outfile_dry_before = path + "/" + date[d] + "/" + date[d] + '_ZHD_before.xyz'
             outfile_dry_after = path + "/" + date[d] + "/" + date[d] + '_ZHD_after.xyz'            
-                
-            fid = open(outfile_wet_before,'wb')
-            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(wetcorrection1,-1,order='F')])
-	    data_write = np.reshape(data_write,(3,-1))
-	    data_write = np.transpose(data_write)
-            data_write.tofile(fid)
-            fid.close()
             
-            fid = open(outfile_wet_after,'wb')
-            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(wetcorrection2,-1,order='F')])
-	    data_write = np.reshape(data_write,(3,-1))
-	    data_write = np.transpose(data_write)
-            data_write.tofile(fid)
-            fid.close()        
+            write_out_file(outfile_wet_before,xi,yi,wetcorrection1)
+            write_out_file(outfile_wet_after,xi,yi,wetcorrection2)
             
-            fid = open(outfile_dry_before,'wb')
-            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(drycorrection1,-1,order='F')])
-	    data_write = np.reshape(data_write,(3,-1))
-	    data_write = np.transpose(data_write)
-            data_write.tofile(fid)
-            fid.close()
-            
-            fid = open(outfile_dry_after,'wb')
-            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(drycorrection2,-1,order='F')])
-	    data_write = np.reshape(data_write,(3,-1))
-	    data_write = np.transpose(data_write)
-            data_write.tofile(fid)
-            fid.close()
-            
+            write_out_file(outfile_dry_before,xi,yi,drycorrection1)
+            write_out_file(outfile_dry_after,xi,yi,drycorrection2)
+                       
             # Output wet correction
             wetcorrection = wetcorrection1*frac[d]+wetcorrection2*frac[d+length]
             del wetcorrection1 
             del wetcorrection2
             wetcorrection = wetcorrection * 100     # delay in CM
             outfile = path + "/" + date[d] + "/" + date[d] + '_ZWD.xyz'
-            fid = open(outfile,'wb')
-            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(wetcorrection,-1,order='F')])
-	    data_write = np.reshape(data_write,(3,-1))
-	    data_write = np.transpose(data_write)
-            data_write.tofile(fid)
-            fid.close()
+            write_out_file(outfile,xi,yi,wetcorrection)
             del wetcorrection
             
             # Output hydrostatic correction
@@ -544,12 +542,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
             del drycorrection2
             hydrcorrection = hydrcorrection * 100   # delay in CM
             hydroutfile = path + "/" + date[d] + "/" + date[d] + '_ZHD.xyz'
-            fid = open(hydroutfile,'wb')
-            data_write = np.array([np.reshape(xi,-1,order='F'),np.reshape(yi,-1,order='F'),np.reshape(hydrcorrection,-1,order='F')])
-	    data_write = np.reshape(data_write,(3,-1))
-	    data_write = np.transpose(data_write)
-            data_write.tofile(fid)
-            fid.close()
+            write_out_file(hydroutfile,xi,yi,hydrcorrection)
             del hydrcorrection
             
             print "{D} completed out of {L}".format(D=d+1,L=length)
@@ -559,12 +552,11 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     
 if __name__ == '__main__':
 
-  parser = argparse.ArgumentParser(prog='aps_',
-    description='Download weather model data for a stack of interferograms')
+  parser = argparse.ArgumentParser(prog='aps_wetaher_model_SAR',
+    description='Calcuate zenith wet and hydrostatic delays')
   parser.add_argument("-d","--dem",help="Name of DEM file to use (geotiff)")
   parser.add_argument("-g","--geo_ref_file",help="Name of file for georeferencing information")
 
   args = parser.parse_args()
-
   aps_weather_model_SAR(demfile=args.dem,geo_ref_file=args.geo_ref_file)
 

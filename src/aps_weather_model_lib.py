@@ -85,9 +85,9 @@ def get_date_list():
         t = myfile.split('_')
         datelist.append(t[0])
         datelist.append(t[1])
-    datelist = list(set(datelist))
-    datelist.sort()
-    return datelist
+    shortlist = list(set(datelist))
+    shortlist.sort()
+    return shortlist, datelist
 
 def times(utc,datelist):
     t_before = int(np.floor(float(utc)/21600))
