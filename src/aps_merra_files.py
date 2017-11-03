@@ -42,10 +42,10 @@ from datetime import date, timedelta
 import aps_weather_model_lib as aps
 
 
-def aps_weather_model(order_flag,geo_ref_file=None):  
+def aps_merra_files(order_flag,geo_ref_file=None):  
   
     # get list of interferograms
-    datelist = aps.get_date_list()
+    datelist, tmp = aps.get_date_list()
     n_files = len(datelist)
 
     # read URS credentials
@@ -58,30 +58,21 @@ def aps_weather_model(order_flag,geo_ref_file=None):
 #    password = t[1]
  
     # setup parameters
-    utc = aps.get_param('UTC_sat')
+    utc = float(aps.get_param('UTC_sat'))
     merra_datapath = aps.get_param('merra_datapath')
 
     # determine lat, lon range
     region_lat_range = aps.get_range('region_lat_range', geo_ref_file = geo_ref_file)
     region_lon_range = aps.get_range('region_lon_range', geo_ref_file = geo_ref_file)
 
-    print utc
-    print merra_datapath
-    print region_lat_range
-    print region_lon_range
-
-    # add 2 degrees to lat,lon range
+   # add 2 degrees to lat,lon range
     S = round(min(region_lat_range)) - 2
     N = round(max(region_lat_range)) + 2
     W = round(min(region_lon_range)) - 2
     E = round(max(region_lon_range)) + 2
 
-    print S, N, W, E
-
     # figure out which dates.times we need to download
-    (date,time) = aps.times(utc,datelist)
-    print date 
-    print time
+    (date,time,frac) = aps.times(utc,datelist)
 
     # create download file names
     download_list = []
@@ -99,7 +90,7 @@ def aps_weather_model(order_flag,geo_ref_file=None):
             series_type = 300
         else:
             series_type = 400
-        download = "http://goldsmr5.gesdisc.eosdis.nasa.gov/daac-bin/OTF/HTTP_services.cgi?FILENAME=%2Fdata%2Fs4pa%2FMERRA2%2FM2I6NPANA.5.12.4%2F{YEAR}%2F{MONTH}%2FMERRA2_{TYPE}.inst6_3d_ana_Np.{YMD}.nc4&FORMAT=bmM0Yy8&BBOX=29%2C-107%2C36%2C-100&TIME=1979-01-01T{HOUR}%3A00%3A00%2F1979-01-01T{HOUR}%3A00%3A00&LABEL=svc_MERRA2_{TYPE}.inst6_3d_ana_Np.{YMD}.nc4&FLAGS=&SHORTNAME=M2I6NPANA&SERVICE=SUBSET_MERRA2&LAYERS=&VERSION=1.02&VARIABLES= ".format(YEAR=year,MONTH=month,TYPE=series_type,YMD=ymd,HOUR=hour)
+        download = "http://goldsmr5.gesdisc.eosdis.nasa.gov/daac-bin/OTF/HTTP_services.cgi?FILENAME=%2Fdata%2Fs4pa%2FMERRA2%2FM2I6NPANA.5.12.4%2F{YEAR}%2F{MONTH}%2FMERRA2_{TYPE}.inst6_3d_ana_Np.{YMD}.nc4&FORMAT=bmM0Yy8&BBOX={S}%2C{W}%2C{N}%2C{E}&TIME=1979-01-01T{HOUR}%3A00%3A00%2F1979-01-01T{HOUR}%3A00%3A00&LABEL=svc_MERRA2_{TYPE}.inst6_3d_ana_Np.{YMD}.nc4&FLAGS=&SHORTNAME=M2I6NPANA&SERVICE=SUBSET_MERRA2&LAYERS=&VERSION=1.02&VARIABLES= ".format(S=int(S),N=int(N),W=int(W),E=int(E),YEAR=year,MONTH=month,TYPE=series_type,YMD=ymd,HOUR=hour)
         download_list.append(download)
         
     # create output file names
@@ -132,9 +123,9 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   if args.geo_ref_file is None:
-      aps_weather_model(args.order_flag)
+      aps_merra_files(args.order_flag)
   else:
-      aps_weather_model(args.order_flag,args.geo_ref_file)
+      aps_merra_files(args.order_flag,args.geo_ref_file)
       
       
 

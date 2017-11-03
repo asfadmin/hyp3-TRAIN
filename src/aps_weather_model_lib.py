@@ -35,7 +35,11 @@
 import glob
 import saa_func_lib as saa
 import numpy as np
+import datetime
+import time
 
+def timestamp(date):
+    return time.mktime(date.timetuple())
 
 def get_param(target):
     f = open('parms_aps.txt','r')
@@ -50,14 +54,14 @@ def get_range(target,geo_ref_file=None):
     if geo_ref_file is not None and ".tif" in geo_ref_file:
         print "Reading {TARG} from file {FILE}".format(TARG=target,FILE=geo_ref_file)
         if target == 'region_lat_range':
-            reffile = glob.glob("*wgs84.tif")[0]
+            reffile = glob.glob("*_unw_phase.tif")[0]
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullat = trans[3]
             lrlat = trans[3] + y*trans[5]
             mylist = [ullat,lrlat]
             return mylist 
         elif target == 'region_lon_range':
-            reffile = glob.glob("*wgs84.tif")[0]
+            reffile = glob.glob("*_unw_phase.tif")[0]
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullon = trans[0]
             lrlon = trans[0] + x*trans[1]
