@@ -6,7 +6,7 @@
 # Project:  APD TRAIN
 # Purpose:  Load MERRA2 netcdf file
 #          
-# Author:  Tom Logan
+# Author:  Tom Logan, adapted from David Bekaert's matlab code
 #
 ###############################################################################
 # Copyright (c) 2017, Alaska Satellite Facility
@@ -62,7 +62,7 @@ def aps_load_merra(wfile):
     Temp[Temp==missing_value]=np.nan
     qv[qv==missing_value]=np.nan
     H[H==missing_value]=np.nan
-    
+ 
     # number of lat,lon grid nodes
     n_latitude_points = len(lats)
     n_longitude_points = len(lons)

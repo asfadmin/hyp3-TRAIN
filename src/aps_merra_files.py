@@ -6,7 +6,7 @@
 # Project:  APD TRAIN
 # Purpose:  Download MERRA2 weather data 
 #          
-# Author:  Tom Logan
+# Author:  Tom Logan, adapted from David Bekaert's matlab code
 #
 ###############################################################################
 # Copyright (c) 2017, Alaska Satellite Facility
@@ -41,7 +41,6 @@ import numpy as np
 from datetime import date, timedelta
 import aps_weather_model_lib as aps
 
-
 def aps_merra_files(order_flag,geo_ref_file=None):  
   
     # get list of interferograms
@@ -59,7 +58,7 @@ def aps_merra_files(order_flag,geo_ref_file=None):
  
     # setup parameters
     utc = float(aps.get_param('UTC_sat'))
-    merra_datapath = aps.get_param('merra_datapath')
+    merra_datapath = aps.get_param('merra2_datapath')
 
     # determine lat, lon range
     region_lat_range = aps.get_range('region_lat_range', geo_ref_file = geo_ref_file)
@@ -94,7 +93,7 @@ def aps_merra_files(order_flag,geo_ref_file=None):
         download_list.append(download)
         
     # create output file names
-    output_list = aps.file_names(date,time,merra_datapath)
+    output_list = aps.file_names("merra2",date,time,merra_datapath)
     
     # download the data or write a file
     if int(order_flag) == 1:

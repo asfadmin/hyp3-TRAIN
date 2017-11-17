@@ -8,7 +8,7 @@
 #           It will give the computed ZENITH hydrostatic and wet delay map in cm 
 #           for the selected region.
 #          
-# Author:  Tom Logan
+# Author:  Tom Logan, adapted from David Bekaert's matlab code
 #
 ###############################################################################
 # Copyright (c) 2017, Alaska Satellite Facility
@@ -36,8 +36,6 @@
 #####################
 import sys
 import os
-import re
-import math
 from get_dem import get_dem
 from osgeo import gdal
 import argparse
@@ -51,14 +49,15 @@ from aps_load_merra import aps_load_merra
 from aps_weather_model_nan_check import aps_weather_model_nan_check
 import datetime
 import time
+from execute import execute
 
 
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed
 # import multiprocessing
-from multiprocessing import Pool
+# from multiprocessing import Pool
 
 
-def get_DEM(demfile,geo_ref_file=None):
+def get_DEM(geo_ref_file=None):
 
     region_lat_range = aps.get_range('region_lat_range', geo_ref_file = geo_ref_file)
     region_lon_range = aps.get_range('region_lon_range', geo_ref_file = geo_ref_file)
@@ -72,23 +71,36 @@ def get_DEM(demfile,geo_ref_file=None):
         region_res = aps.get_param('region_res')
     else:
         if ".tif" in geo_ref_file:
-            print "Reading geotiff DEM file"
+            print "Reading geotiff reference file; getting resolution."
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             region_res = trans[1]
         else:
             print "Unknown DEM type"
             exit(1)
+    
+    dem_origin = aps.get_param("DEM_origin")
+    dem_file = aps.get_param("DEM_file")
 
-    if not os.path.isfile(demfile):
-        print "DEM file does not exist.  Creating it..."
-        get_dem(minlon,minlat,maxlon,maxlat,demfile,0,PAP=False)
-        
-    (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(demfile))
-    if (float(trans[1]) - float(region_res))>10e-9:
+    if dem_origin == "asf":
+        print "Creating DEM file {} using the ASF DEM heap...".format(dem_file)
+        get_dem(minlon,minlat,maxlon,maxlat,dem_file,0)
+    elif dem_origin == "opentopo":
+        print "Creating DEM file {} using opentopo...".format(dem_file)
+        cmd = "wget -O%s \"http://opentopo.sdsc.edu/otr/getdem?demtype=SRTMGL1&west=%s&south=%s&east=%s&north=%s&outputFormat=GTiff\"" % (dem_file,minlon,minlat,maxlon,maxlat) 
+        execute(cmd)
+    else:
+        if not os.path.isfile(dem_file):
+            print "ERROR: DEM file {} does not exist".format(dem_file)
+            exit(1)
+        else:
+            print "Reading in pre-existing DEM file {}".format(dem_file)
+         
+    (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
+    if np.abs(float(trans[1]) - float(region_res))>10e-9:
         print "Resampling DEM file to match region_res"    
-        gdal.Warp("tmp.dem",demfile,xRes=region_res,yRes=region_res,resampleAlg="cubic",dstNodata=-32767)
-        shutil.move("tmp.dem",demfile)
-        (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(demfile))
+        gdal.Warp("tmp.dem",dem_file,xRes=region_res,yRes=region_res,resampleAlg="cubic",dstNodata=-32767)
+        shutil.move("tmp.dem",dem_file)
+        (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
     nncols = x
     nnrows = y
     demres = trans[1]
@@ -116,7 +128,7 @@ def inter2d(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,n):
     newslice = sp.interpolate.bisplev(yivec,xivec,tck)
     return newslice
 
-def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
+def aps_weather_model_SAR(model_type,geo_ref_file=None):
 
     start = datetime.datetime.now()
 
@@ -137,13 +149,12 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 
     XI= [int(i) for i in range(0,zref+1,zincr)]
     
-    path = aps.get_param('merra_datapath')
-    demfile = aps.get_param('demfile')
+    path = aps.get_param('{}_datapath'.format(model_type))
     utc = float(aps.get_param('UTC_sat'))
     dates, tmp = aps.get_date_list()
     n_dates = len(dates)
      
-    dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(demfile,geo_ref_file)
+    dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(geo_ref_file)
 
     lonmin = np.floor(xmin)-1
     lonmax= np.ceil(xmax)+1
@@ -170,7 +181,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
     
     date,time,frac = aps.times(utc,dates)
    
-    input_file_names = aps.file_names(date,time,path)
+    input_file_names = aps.file_names(model_type,date,time,path)
     length = len(input_file_names)/2
     
     for d in range(length):
@@ -188,8 +199,12 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 print "Loading input weather file: {}".format(wfile)
             
                 # Load the weather model data
-                (Temp,e,H,P,longrid,latgrid,xx,yy,lon0360_flag) = aps_load_merra(wfile) 
-                                
+                if model_type == "merra2":
+                    (Temp,e,H,P,longrid,latgrid,xx,yy,lon0360_flag) = aps_load_merra(wfile) 
+                else:
+                    print "Model type {} not implemented!".format(model_type)
+                    exit(1)
+                    
  		# deal with NANs
                 (Temp,e) = aps_weather_model_nan_check(Temp,e,P,longrid,latgrid)                
 
@@ -246,8 +261,8 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 glocal = g[midx,midy,0]
                 Rlocal = Re[midx,midy,0]
 
-                cdstack_dry = np.zeros((numy,numx,cdslices))
-                cdstack_wet = np.zeros((numy,numx,cdslices))
+                cdstack_dry = np.zeros((numy,numx,cdslices),dtype=np.float32)
+                cdstack_wet = np.zeros((numy,numx,cdslices),dtype=np.float32)
 
                 # Interpolate Temp P and e from 0:20:15000 m
                 # then integrate using trapz to estimate delay as function of height
@@ -299,7 +314,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 lonlist_matrix = np.reshape(lonlist,(ixi_temp[0],-1),order='F')
                 latlist_matrix = np.reshape(latlist,(ixi_temp[0],-1),order='F')
 
-                cdstack_interp_dry = np.zeros((nnrows,nncols,cdslices))
+                cdstack_interp_dry = np.zeros((nnrows,nncols,cdslices),dtype=np.float32)
                 sys.stdout.write("processing dry stack")
                 sys.stdout.flush()
                 for n in range(cdslices):
@@ -321,7 +336,7 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
 #                pool = Pool(processes=8)
 #                cdstack_interp_dry = [pool.apply(inter2d,args=(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,n)) for n in range(cdslices)]
 
-                cdstack_interp_wet = np.zeros((nnrows,nncols,cdslices))
+                cdstack_interp_wet = np.zeros((nnrows,nncols,cdslices),dtype=np.float32)
                 sys.stdout.write("processing wet stack")
                 sys.stdout.flush()
                 
@@ -348,8 +363,8 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
                 yi = np.flipud(yi)
                 
                 # Pull out delays from cdstack layers that match dem heights
-                wetcorrection = np.ones((nnrows,nncols))
-                hydrcorrection = np.ones((nnrows,nncols))
+                wetcorrection = np.ones((nnrows,nncols),dtype=np.float32)
+                hydrcorrection = np.ones((nnrows,nncols),dtype=np.float32)
                 
                 for i in range(nnrows):
                     for j in range(nncols):
@@ -407,14 +422,15 @@ def aps_weather_model_SAR(demfile=None,geo_ref_file=None):
         else:
             print "{D} completed out of {L} (NO DATA)".format(D=d+1,L=length)
         
+    elapsed=aps.timestamp(datetime.datetime.now())-aps.timestamp(start)
+    print "Done!!! Completed all files in time {}".format(elapsed)
     
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(prog='aps_weather_model_SAR',
     description='Calculate zenith wet and hydrostatic delays')
-  parser.add_argument("-d","--dem",help="Name of DEM file to use (geotiff)")
   parser.add_argument("-g","--geo_ref_file",help="Name of file for georeferencing information")
 
   args = parser.parse_args()
-  aps_weather_model_SAR(demfile=args.dem,geo_ref_file=args.geo_ref_file)
+  aps_weather_model_SAR("merra2",geo_ref_file=args.geo_ref_file)
 

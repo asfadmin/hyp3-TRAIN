@@ -6,7 +6,7 @@
 # Project:  APD TRAIN
 # Purpose:  Convert zenith hydrostatic and wet delays into phase corrections
 #          
-# Author:  Tom Logan
+# Author:  Tom Logan, adapted from David Bekaert's matlab code
 #
 ###############################################################################
 # Copyright (c) 2017, Alaska Satellite Facility
@@ -32,7 +32,7 @@
 # Import all needed modules right away
 #
 #####################
-import os
+import os, re
 import argparse
 import aps_weather_model_lib as aps
 import saa_func_lib as saa
@@ -62,8 +62,22 @@ def get_ll_mat(geo_ref_file):
 	lonlat[:,0] = xi
         lonlat[:,1] = yi
     else:
-        print "llmat under construction; must use geo_ref_file for now"
-        exit(1)
+        ll_file = aps.get_param('ll_file')
+        if not os.path.isfile(ll_file):
+            print "ERROR: Lat,Lon file {} does not exist.".format(ll_file)
+            exit(1)
+        f = open(ll_file,'r')
+        lat = []
+        lon = []
+        for line in f:
+            t = re.split(' ',line)
+            lat.append(float(t[0]))
+            lon.append(float(t[1]))
+        cnt = len(lat)
+        lonlat = np.zeros((cnt,2))
+        lonlat[:,0] = lon
+        lonlat[:,1] = lat
+ 
     return lonlat
 
 def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5, geo_ref_file=None):
@@ -119,10 +133,11 @@ def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5,
         z_output = sp.interpolate.griddata(input_grid,data[:,2],output_grid)
     return z_output
 
-
-def load_weather_model_SAR2(infile,geo_ref_file):
-    demfile = aps.get_param('demfile')
-    (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
+def load_weather_model_SAR2(infile,geo_ref_file,region_lat_range,region_lon_range,region_res):
+    demfile = aps.get_param('DEM_file')
+    if not os.path.isfile(demfile):
+        print "ERROR: DEM file {} doesn't exist.  Did you run step 2 already?"
+        exit(1)
     (x1,y1,trans1,proj1,data1) = saa.read_gdal_file(saa.open_gdal_file(demfile))
     print "Reading file {}".format(infile)
     fid = open(infile,'rb')
@@ -130,35 +145,50 @@ def load_weather_model_SAR2(infile,geo_ref_file):
     data = np.reshape(data, (-1,3))
     
     if len(data[:,2]) != x1*y1:
-        print "Error: data size mismatch"
+        print "Error: data size mismatch - len = {}, x*y = {}".format(len(data[:,2]),x1*y1)
         exit(1)
     data = data[:,2]
     data = np.reshape(data,(x1,y1))
     data = np.transpose(data)
     outfile = os.path.basename(infile.replace(".xyz",".tif"))
     saa.write_gdal_file_float(outfile,trans1,proj1,data)
-    outfile2 = "regrid_" + outfile
-    
-    ullat = trans[3]
-    lrlat = trans[3] + y*trans[5]
-    ullon = trans[0]
-    lrlon = trans[0] + x*trans[1]
+
+    if geo_ref_file is not None:
+        (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
+        ullat = trans[3]
+        lrlat = trans[3] + y*trans[5]
+        ullon = trans[0]
+        lrlon = trans[0] + x*trans[1]
+    else:
+        lrlat = min(region_lat_range)
+        ullat = max(region_lat_range)
+        lrlon = min(region_lon_range)
+        ullon = max(region_lon_range)
+        y = int(abs(lrlat-ullat)/region_res)
+        x = int(abs(lrlon-ullon)/region_res)
     output_bounds = [min(lrlon,ullon),min(lrlat,ullat),max(lrlon,ullon),max(lrlat,ullat)]
-    gdal.Warp(outfile2,outfile,width=x,height=y,outputBounds=output_bounds,resampleAlg='bilinear')
-    (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(outfile2))
-    
-    os.remove(outfile)
-    os.remove(outfile2)
-    
+    ds = gdal.Warp('',outfile,format = 'MEM',width=x,height=y,outputBounds=output_bounds,resampleAlg='bilinear')
+    banddata = ds.GetRasterBand(1)
+    data = banddata.ReadAsArray()
     data = data.flatten()
+    os.remove(outfile)
+    
     return data
 
-def aps_weather_model_INSAR(geo_ref_file=None):
+def aps_weather_model_INSAR(model_type,geo_ref_file=None):
 
     start = datetime.datetime.now()
     print "Calculating phase delays"
     
-    path = aps.get_param('merra_datapath')
+    path = aps.get_param('{}_datapath'.format(model_type))
+    if geo_ref_file is None:
+        region_lat_range = aps.get_range('region_lat_range')
+        region_lon_range = aps.get_range('region_lon_range')
+        region_res = float(aps.get_param('region_res'))
+    else:
+        region_lat_range = None
+        region_lon_range = None
+        region_res = None       
     dates, datelist = aps.get_date_list()
     n_dates = len(dates)
     n_igrams = len(datelist)/2
@@ -175,9 +205,9 @@ def aps_weather_model_INSAR(geo_ref_file=None):
     look_angle = float(aps.get_param('look_angle'))
     lonlat = get_ll_mat(geo_ref_file)
     
-    d_wet = np.zeros((len(lonlat[:,0]),n_dates))
+    d_wet = np.zeros((len(lonlat[:,0]),n_dates),dtype=np.float32)
     d_wet[:] = np.nan
-    d_hydro = np.zeros((len(lonlat[:,0]),n_dates))
+    d_hydro = np.zeros((len(lonlat[:,0]),n_dates),dtype=np.float32)
     d_hydro[:] = np.nan    
     counter = 0
     ix_no_weather_model_data = []
@@ -195,7 +225,7 @@ def aps_weather_model_INSAR(geo_ref_file=None):
                 lasttime = datetime.datetime.now()
                 # d_hydro[:,k] = load_weather_model_SAR(model_file_hydro,lonlat,geo_ref_file=geo_ref_file)
                 
-                d_hydro[:,k] = load_weather_model_SAR2(model_file_hydro,geo_ref_file)
+                d_hydro[:,k] = load_weather_model_SAR2(model_file_hydro,geo_ref_file,region_lat_range,region_lon_range,region_res)
                 
 #                outfile = "hydro_correction" + str(k) + ".bin"
 #                d_hydro[:,k].tofile(outfile)
@@ -203,7 +233,7 @@ def aps_weather_model_INSAR(geo_ref_file=None):
                 lasttime = datetime.datetime.now()
                 # d_wet[:,k] = load_weather_model_SAR(model_file_wet,lonlat,geo_ref_file=geo_ref_file)
                 
-                d_wet[:,k] = load_weather_model_SAR2(model_file_wet,geo_ref_file)
+                d_wet[:,k] = load_weather_model_SAR2(model_file_wet,geo_ref_file,region_lat_range,region_lon_range,region_res)
                 
 #                outfile = "wet_correction" + str(k) + ".bin"
 #                d_wet[:,k].tofile(outfile)

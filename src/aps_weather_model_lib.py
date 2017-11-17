@@ -6,7 +6,7 @@
 # Project:  APD TRAIN
 # Purpose:  Libraries for TRAIN software
 #          
-# Author:  Tom Logan
+# Author:  Tom Logan, adapted from David Bekaert's matlab code
 #
 ###############################################################################
 # Copyright (c) 2017, Alaska Satellite Facility
@@ -33,6 +33,8 @@
 #
 #####################
 import glob
+import os
+import re
 import saa_func_lib as saa
 import numpy as np
 import datetime
@@ -54,14 +56,12 @@ def get_range(target,geo_ref_file=None):
     if geo_ref_file is not None and ".tif" in geo_ref_file:
         print "Reading {TARG} from file {FILE}".format(TARG=target,FILE=geo_ref_file)
         if target == 'region_lat_range':
-            reffile = glob.glob("*_unw_phase.tif")[0]
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullat = trans[3]
             lrlat = trans[3] + y*trans[5]
             mylist = [ullat,lrlat]
             return mylist 
         elif target == 'region_lon_range':
-            reffile = glob.glob("*_unw_phase.tif")[0]
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullon = trans[0]
             lrlon = trans[0] + x*trans[1]
@@ -85,10 +85,26 @@ def get_range(target,geo_ref_file=None):
 def get_date_list():
     # get list of interferograms
     datelist=[]
-    for myfile in glob.glob('*_*_unw_phase.tif'):
-        t = myfile.split('_')
-        datelist.append(t[0])
-        datelist.append(t[1])
+    origin = get_param('date_origin')
+    if origin == 'asf':
+        for myfile in glob.glob('*_*_unw_phase.tif'):
+            t = myfile.split('_')
+            datelist.append(t[0])
+            datelist.append(t[1])
+    elif origin == 'file':
+        fname = get_param('ifgday_file')
+        if os.path.isfile(fname):
+            f = open(fname,'r')
+            for line in f:
+                t = re.split(' ',line)
+                datelist.append(t[0].strip())
+                datelist.append(t[1].strip())
+            f.close()
+        else:
+            print "ERROR: Unable to find ifgday file {}".format(fname)
+            exit(1)
+    else:
+        print "ERROR: Unknown date_origin {}".format(origin)
     shortlist = list(set(datelist))
     shortlist.sort()
     return shortlist, datelist
@@ -124,14 +140,14 @@ def times(utc,datelist):
         frac_list.append(f_after)
     return(date_list,time_list,frac_list)
 
-def file_names(date,time,merra_datapath):
+def file_names(model_type,date,time,datapath):
     output_list = []
     for i in range(len(date)):
         ymd=date[i]
         thistime = time[i]
         hour=thistime[0:2]
-        path = merra_datapath + "/" + ymd + "/"
-        output = "{PATH}MERRA2_{YMD}_{HOUR}.nc4".format(PATH=path,YMD=ymd,HOUR=hour)
+        path = datapath + "/" + ymd + "/"
+        output = "{PATH}{TYPE}_{YMD}_{HOUR}.nc4".format(PATH=path,TYPE=model_type.upper(),YMD=ymd,HOUR=hour)
         output_list.append(output)
     return output_list
     
