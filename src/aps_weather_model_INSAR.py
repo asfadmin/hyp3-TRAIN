@@ -80,6 +80,12 @@ def get_ll_mat(geo_ref_file):
  
     return lonlat
 
+def read_look_angle_file(fi):
+        (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(fi))
+        look_angle_name = fi
+        look_angle = data.flatten()
+        return look_angle, look_angle_name
+
 def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5, geo_ref_file=None):
     print "Reading file {}".format(infile)
     fid = open(infile,'rb')
@@ -202,7 +208,17 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
 
     lamb = aps.get_param('lambda')
     lamb = float(lamb)*100
-    look_angle = float(aps.get_param('look_angle'))
+    look_angle = aps.get_param('look_angle')
+    
+    try:
+        look_angle = float(look_angle)
+        la_value = "float"
+        print "Using a single float value for look angle ({})".format(look_angle)
+    except:
+        look_angle, look_angle_name = read_look_angle_file(look_angle)    
+        la_value = "file"
+        print "Using file {} for look angle values".format(look_angle_name)
+        
     lonlat = get_ll_mat(geo_ref_file)
     
     d_wet = np.zeros((len(lonlat[:,0]),n_dates),dtype=np.float32)
@@ -259,9 +275,16 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
             
     d_total = d_hydro + d_wet
     
-    d_total = d_total / np.cos(look_angle)
-    d_hydro = d_hydro / np.cos(look_angle)
-    d_wet = d_wet / np.cos(look_angle)
+    if la_value == "float":
+        d_total = d_total / np.cos(look_angle)
+        d_hydro = d_hydro / np.cos(look_angle)
+        d_wet = d_wet / np.cos(look_angle)
+    else:
+        for k in range(n_dates):
+            d_total[:,k] = d_total[:,k] / np.cos(look_angle)
+            d_hydro[:,k] = d_hydro[:,k] / np.cos(look_angle)
+            d_wet[:,k] = d_wet[:,k] / np.cos(look_angle)
+        del look_angle
     
     ph_SAR = -4 * np.pi/lamb*d_total
     ph_SAR_hydro = -4 * np.pi/lamb*d_hydro
@@ -271,9 +294,9 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
     del d_hydro
     del d_wet
     
-    ph_tropo = np.zeros(len(lonlat[:,0]))
-    ph_tropo_hydro = np.zeros(len(lonlat[:,0]))
-    ph_tropo_wet = np.zeros(len(lonlat[:,0]))
+    ph_tropo = np.zeros(len(lonlat[:,0]),dtype=np.float32)
+    ph_tropo_hydro = np.zeros(len(lonlat[:,0]),dtype=np.float32)
+    ph_tropo_wet = np.zeros(len(lonlat[:,0]),dtype=np.float32)
     
     for k in range(n_igrams):
         ph_tropo[:] = ph_SAR[:,idx_master[k]] - ph_SAR[:,idx_slave[k]]
@@ -281,6 +304,7 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
         ph_tropo_wet[:] = ph_SAR_wet[:,idx_master[k]] - ph_SAR_wet[:,idx_slave[k]]
         
         outfile = dates_master[k] + "_" + dates_slave[k] + "_correction.bin"
+        print "Writing outfile {}".format(outfile)
         ph_tropo.tofile(outfile)
 
         outfile = dates_master[k] + "_" + dates_slave[k] + "_hydro_correction.bin"

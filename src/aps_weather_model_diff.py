@@ -58,7 +58,7 @@ def aps_weather_model_diff():
         # read correction file
         name = date1 + "_" + date2 + "_correction.bin"
         print "Reading file {}".format(name)
-        correction = np.fromfile(name)
+        correction = np.fromfile(name,dtype=np.float32)        
         np.putmask(correction,data==0,0)
                 
         # subtract
@@ -69,8 +69,6 @@ def aps_weather_model_diff():
         name = date1 + "_" + date2 + "_unw_phase_corrected.tif"
         print "Writing file {}".format(name)
         saa.write_gdal_file_float(name,trans,proj,outdata)
-
-
 
 if __name__ == '__main__':
 

@@ -168,6 +168,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
     rounddem = np.round(dem/vertres)
     rounddem[dem<0] = 0
     rounddem[np.isnan(dem)] = 0
+    del dem
 
     if cdslices != len(cdI):
        print "ERROR: length mistmatch"
@@ -211,10 +212,8 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
 		# define weather model grid nodes
                 latlist = np.reshape(latgrid[:,:,1],-1)
                 lonlist = np.reshape(longrid[:,:,1],-1)
-                
                 xlist = np.reshape(xx,-1,order='F')
                 ylist = np.reshape(yy,-1,order='F')
-                
                 lat_res = np.abs(np.diff(np.unique(latgrid)))*1.5
                 lat_res = lat_res[0]
                 lon_res = np.abs(np.diff(np.unique(longrid)))*1.5
@@ -239,13 +238,14 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                 ylist = ylist[ix]
                 latlist = latlist[ix]
                 lonlist = lonlist[ix]
+                
                 ulatlist = np.unique(latlist)
                 ulonlist = np.unique(lonlist)
                 numy = int(len(ulatlist))
                 numx = int(len(ulonlist))
                 uxlist = np.unique(xlist)
                 uylist = np.unique(ylist)
-  
+
                 # map of g with latitude
                 g = 9.80616*(1. - 0.002637*np.cos(2*np.deg2rad(latgrid)) + 0.0000059* np.square(np.cos(2.*np.deg2rad(latgrid))))
                 
@@ -261,9 +261,13 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                 glocal = g[midx,midy,0]
                 Rlocal = Re[midx,midy,0]
 
+		del g
+                del Re
+                del H
+                
                 cdstack_dry = np.zeros((numy,numx,cdslices),dtype=np.float32)
                 cdstack_wet = np.zeros((numy,numx,cdslices),dtype=np.float32)
-
+                
                 # Interpolate Temp P and e from 0:20:15000 m
                 # then integrate using trapz to estimate delay as function of height
                 for i in range(numx):
@@ -278,12 +282,12 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                         YeI = sp.interpolate.splev(XI,f,der=0)
                         YeI = YeI * 100
                         
-                        Yp = np.squeeze(P[yn,xn,:])
+                        Yp = np.squeeze(P[xn,yn,:])
                         f = sp.interpolate.splrep(X,Yp)
                         YPI = sp.interpolate.splev(XI,f,der=0)
                         YPI = YPI * 100
 
-                        YT = np.squeeze(Temp[yn,xn,:])
+                        YT = np.squeeze(Temp[xn,yn,:])
                         f = sp.interpolate.splrep(X,YT)
                         YTI = sp.interpolate.splev(XI,f,der=0)
 
@@ -313,7 +317,9 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                 ixi_temp = ix_temp[0] + 1
                 lonlist_matrix = np.reshape(lonlist,(ixi_temp[0],-1),order='F')
                 latlist_matrix = np.reshape(latlist,(ixi_temp[0],-1),order='F')
-
+                del ix_temp
+		del ixi_temp
+                
                 cdstack_interp_dry = np.zeros((nnrows,nncols,cdslices),dtype=np.float32)
                 sys.stdout.write("processing dry stack")
                 sys.stdout.flush()

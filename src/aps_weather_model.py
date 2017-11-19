@@ -46,7 +46,9 @@ def aps_weather_model(model_type,start,end,geo_ref_file=None):
     start_time = datetime.datetime.now()
 
     if start == 0:
+        print "================================================================================"
         print "Step 0: Determine files to download"
+        print "================================================================================"
         if model_type=='era':
             print "ERROR: ERA is still under construction"
             exit(1)
@@ -59,7 +61,9 @@ def aps_weather_model(model_type,start,end,geo_ref_file=None):
             print "ERROR: Unknown model type {}".format(model_type)
             exit(1)
     if start <= 1 and end >= 1:
+        print "================================================================================"
         print "Step 1: Order and download {type} data files".format(type=model_type)
+        print "================================================================================"
         if model_type=='era':
             print "ERROR: ERA is still under construction"
             exit(1)
@@ -72,13 +76,19 @@ def aps_weather_model(model_type,start,end,geo_ref_file=None):
             print "ERROR: Unknown model type {}".format(model_type)
             exit(1)
     if start <= 2 and end >= 2:
+        print "================================================================================"
         print "Step 2: Compute the {type} tropospheric (zenith) delay for individual dates".format(type=model_type)
+        print "================================================================================"
         aps_weather_model_SAR(model_type,geo_ref_file)
     if start <= 3 and end >= 3:
-        print "Step 3: Computes {type} tropospheric (slant) delay for inteferograms".format(type=model_type)
+        print "================================================================================"
+        print "Step 3: Compute {type} tropospheric (slant) delay for inteferograms".format(type=model_type)
+        print "================================================================================"
         aps_weather_model_INSAR(model_type,geo_ref_file)
     if start <= 4 and end >= 4:
+        print "================================================================================"
         print "Step 4: Subtract delay from interferograms"
+        print "================================================================================"
         aps_weather_model_diff()
     
     print "Done!!!"
