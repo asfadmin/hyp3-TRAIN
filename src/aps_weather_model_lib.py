@@ -105,8 +105,17 @@ def get_date_list():
             exit(1)
     else:
         print "ERROR: Unknown date_origin {}".format(origin)
+
     shortlist = list(set(datelist))
     shortlist.sort()
+    if len(shortlist) == 0:
+        print "ERROR: No dates found; Nothing to do"
+        print ""
+        if origin == 'asf':
+            print "No files of the form *_unw_phase.tif were found in {}".format(os.getcwd())
+            print "You must place your unwrapped phase geotiffs in the directory where you ran the code."
+        exit(1)
+
     return shortlist, datelist
 
 def times(utc,datelist):

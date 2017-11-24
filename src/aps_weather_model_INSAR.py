@@ -80,11 +80,11 @@ def get_ll_mat(geo_ref_file):
  
     return lonlat
 
-def read_look_angle_file(fi):
+def read_incid_angle_file(fi):
         (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(fi))
-        look_angle_name = fi
-        look_angle = data.flatten()
-        return look_angle, look_angle_name
+        incid_angle_name = fi
+        incid_angle = data.flatten()
+        return incid_angle, incid_angle_name
 
 def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5, geo_ref_file=None):
     print "Reading file {}".format(infile)
@@ -208,16 +208,16 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
 
     lamb = aps.get_param('lambda')
     lamb = float(lamb)*100
-    look_angle = aps.get_param('look_angle')
+    incid_angle = aps.get_param('incidence_angle')
     
     try:
-        look_angle = float(look_angle)
-        la_value = "float"
-        print "Using a single float value for look angle ({})".format(look_angle)
+        incid_angle = float(incid_angle)
+        ia_value = "float"
+        print "Using a single float value for incidence angle ({})".format(incid_angle)
     except:
-        look_angle, look_angle_name = read_look_angle_file(look_angle)    
-        la_value = "file"
-        print "Using file {} for look angle values".format(look_angle_name)
+        incid_angle, incid_angle_name = read_incid_angle_file(incid_angle)    
+        ia_value = "file"
+        print "Using file {} for incidence angle values".format(incid_angle_name)
         
     lonlat = get_ll_mat(geo_ref_file)
     
@@ -275,16 +275,16 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
             
     d_total = d_hydro + d_wet
     
-    if la_value == "float":
-        d_total = d_total / np.cos(look_angle)
-        d_hydro = d_hydro / np.cos(look_angle)
-        d_wet = d_wet / np.cos(look_angle)
+    if ia_value == "float":
+        d_total = d_total / np.cos(incid_angle)
+        d_hydro = d_hydro / np.cos(incid_angle)
+        d_wet = d_wet / np.cos(incid_angle)
     else:
         for k in range(n_dates):
-            d_total[:,k] = d_total[:,k] / np.cos(look_angle)
-            d_hydro[:,k] = d_hydro[:,k] / np.cos(look_angle)
-            d_wet[:,k] = d_wet[:,k] / np.cos(look_angle)
-        del look_angle
+            d_total[:,k] = d_total[:,k] / np.cos(incid_angle)
+            d_hydro[:,k] = d_hydro[:,k] / np.cos(incid_angle)
+            d_wet[:,k] = d_wet[:,k] / np.cos(incid_angle)
+        del incid_angle
     
     ph_SAR = -4 * np.pi/lamb*d_total
     ph_SAR_hydro = -4 * np.pi/lamb*d_hydro

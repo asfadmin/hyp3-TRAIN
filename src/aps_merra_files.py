@@ -40,6 +40,7 @@ from os.path import expanduser
 import numpy as np
 from datetime import date, timedelta
 import aps_weather_model_lib as aps
+from os.path import expanduser
 
 def aps_merra_files(order_flag,geo_ref_file=None):  
   
@@ -56,6 +57,17 @@ def aps_merra_files(order_flag,geo_ref_file=None):
 #    username = t[0]
 #    password = t[1]
  
+    home = expanduser("~")
+    fileName = home + '/.netrc'
+    if not os.path.isfile(fileName):
+        print "ERROR: No .netrc file found in {}".format(home)
+        print ""
+        print "You will need a .netrc file in order to downoad the MERRA2 weather model data."
+        print "Please see the documentation or the webpage https://disc.gsfc.nasa.gov/data-access"
+        print "for information on how to create an Earthdata login and a .netrc file"
+        print ""
+        exit(1)
+   
     # setup parameters
     utc = float(aps.get_param('UTC_sat'))
     merra_datapath = aps.get_param('merra2_datapath')
@@ -106,6 +118,19 @@ def aps_merra_files(order_flag,geo_ref_file=None):
             else:
                 cmd = "wget -O{OUTFILE} \"{DOWNFILE}\"".format(OUTFILE=output_list[i],DOWNFILE=download_list[i])
                 execute(cmd)
+        for i in range(len(output_list)):
+            if not os.path.isfile(output_list[i]):
+                print "ERROR:  Unable to find MERRA2 file {}".format(fileName)
+                print ""
+                print "Apparently, something went wrong with the downloads."
+                print "Please make sure you have proper access to GESDISC."
+                print "Please see the documentation or https://disc.gsfc.nasa.gov/data-access"
+                print ""
+                exit(1)
+        if (os.path.getsize(output_list[i])<100000):
+            print "WARNING: File {} is quite small.  There may be a problem".format(output_list[i])
+            print "with the weather data downloads or weather data for that date may not exist."
+            print "Please be aware there may be a 4 week delay in publishing MERRA2 weather data."
     else:
         f = open("download_files.txt","w")
         for i in range(len(date)):
