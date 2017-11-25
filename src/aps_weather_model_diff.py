@@ -32,7 +32,7 @@
 # Import all needed modules right away
 #
 #####################
-import re
+import re, os
 import argparse
 from osgeo import gdal
 import glob
@@ -43,32 +43,34 @@ def aps_weather_model_diff():
     
     for myfile in glob.glob('*_*_unw_phase.tif'):
         
-        # read interferogram phase file
-        print "Reading file {}".format(myfile)
-        (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(myfile))
-        flat_data = data.flatten()
-        
         # get dates of this interferogram
         t = re.split("_",myfile)
         date1 = t[0]
         date2 = t[1]
         
-	print "found dates {a} {b}".format(a=date1,b=date2)
-
-        # read correction file
+        # check for correction file
         name = date1 + "_" + date2 + "_correction.bin"
-        print "Reading file {}".format(name)
-        correction = np.fromfile(name,dtype=np.float32)        
-        np.putmask(correction,data==0,0)
-                
-        # subtract
-        out = flat_data - correction
-        outdata = np.reshape(out,(y,x))
+        if not os.path.isfile(name):
+            print "No correction file found for dates {} and {}".format(date1,date2)
+        else:
+            # read interferogram phase file
+            print "Reading file {}".format(myfile)
+            (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(myfile))
+            flat_data = data.flatten()
         
-        # write dfiference file
-        name = date1 + "_" + date2 + "_unw_phase_corrected.tif"
-        print "Writing file {}".format(name)
-        saa.write_gdal_file_float(name,trans,proj,outdata)
+            # read phase correction file
+            print "Reading file {}".format(name)
+            correction = np.fromfile(name,dtype=np.float32)        
+            np.putmask(correction,data==0,0)
+                
+            # subtract
+            out = flat_data - correction
+            outdata = np.reshape(out,(y,x))
+        
+            # write difference file
+            name = date1 + "_" + date2 + "_unw_phase_corrected.tif"
+            print "Writing file {}".format(name)
+            saa.write_gdal_file_float(name,trans,proj,outdata)
 
 if __name__ == '__main__':
 

@@ -256,7 +256,7 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
                 print("Time to read and interpolate file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
                 counter = counter + 1
             else:
-                print "no correction for {}. Exiting.".format(date[k])
+                print "No correction for {}. Skipping".format(dates[k])
                 ix_no_weather_model_data.append(k)
               
         print "{CNT} out of {NDATES} SAR images have a tropospheric delay estimated".format(CNT=counter,NDATES=n_dates)
@@ -299,19 +299,22 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
     ph_tropo_wet = np.zeros(len(lonlat[:,0]),dtype=np.float32)
     
     for k in range(n_igrams):
-        ph_tropo[:] = ph_SAR[:,idx_master[k]] - ph_SAR[:,idx_slave[k]]
-        ph_tropo_hydro[:] = ph_SAR_hydro[:,idx_master[k]] - ph_SAR_hydro[:,idx_slave[k]]
-        ph_tropo_wet[:] = ph_SAR_wet[:,idx_master[k]] - ph_SAR_wet[:,idx_slave[k]]
+        if idx_master[k] in ix_no_weather_model_data or idx_slave[k] in ix_no_weather_model_data:
+            print "No weather data correction found for either {} or {}".format(dates_master[k],dates_slave[k])
+        else:
+            ph_tropo[:] = ph_SAR[:,idx_master[k]] - ph_SAR[:,idx_slave[k]]
+            ph_tropo_hydro[:] = ph_SAR_hydro[:,idx_master[k]] - ph_SAR_hydro[:,idx_slave[k]]
+            ph_tropo_wet[:] = ph_SAR_wet[:,idx_master[k]] - ph_SAR_wet[:,idx_slave[k]]
         
-        outfile = dates_master[k] + "_" + dates_slave[k] + "_correction.bin"
-        print "Writing outfile {}".format(outfile)
-        ph_tropo.tofile(outfile)
+            outfile = dates_master[k] + "_" + dates_slave[k] + "_correction.bin"
+            print "Writing outfile {}".format(outfile)
+            ph_tropo.tofile(outfile)
 
-        outfile = dates_master[k] + "_" + dates_slave[k] + "_hydro_correction.bin"
-        ph_tropo_hydro.tofile(outfile)
+            outfile = dates_master[k] + "_" + dates_slave[k] + "_hydro_correction.bin"
+            ph_tropo_hydro.tofile(outfile)
         
-        outfile = dates_master[k] + "_" + dates_slave[k] + "_wet_correction.bin"
-        ph_tropo_wet.tofile(outfile)
+            outfile = dates_master[k] + "_" + dates_slave[k] + "_wet_correction.bin"
+            ph_tropo_wet.tofile(outfile)
 
     print "Total processing time {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(start))
 
