@@ -73,10 +73,9 @@ def aps_weather_model_diff():
         
             # write difference file
             name = date1 + "_" + date2 + "_unw_phase_corrected.tif"
-            print "Writing file {}".format(name)
             saa.write_gdal_file_float(name,trans,proj,outdata)
             
-            good_cnt = good_count + 1
+            good_count = good_count + 1
             
     if (total_count == 0):
         print "ERROR:  No unwrapped phase files (*_unw_phase.tif) found in current directory."

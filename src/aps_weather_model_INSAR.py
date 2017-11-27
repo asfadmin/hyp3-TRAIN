@@ -113,7 +113,7 @@ def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5,
             ix_temp6 = np.intersect1d(ix_temp3,ix_temp4)
             ix_temp = np.intersect1d(ix_temp5,ix_temp6)
             
-            if len(ix_temp) > 0:
+            if ix_temp:
                 ix_temp1 = np.where(data[:,0]>=lon_grid[k]-chunk_size/2)
                 ix_temp2 = np.where(data[:,0]<=lon_grid[k]+chunk_size+chunk_size/2)
                 ix_temp3 = np.where(data[:,1]>=lat_grid[k]-chunk_size/2)

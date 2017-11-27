@@ -111,7 +111,7 @@ def get_date_list():
 
     shortlist = list(set(datelist))
     shortlist.sort()
-    if len(shortlist) == 0:
+    if not shortlist:
         print "ERROR: No dates found; Nothing to do"
         print ""
         if origin == 'asf':
