@@ -33,6 +33,7 @@
 # Import all needed modules right away
 #
 #####################
+import os
 import argparse
 import aps_weather_model_lib as aps
 from aps_merra_files import aps_merra_files
@@ -43,7 +44,26 @@ import datetime
 import time
 
 def aps_weather_model(model_type,start,end,geo_ref_file=None):
+
     start_time = datetime.datetime.now()
+
+    # Perform some error checking on inputs
+    if start < 0 or start > 4:
+        print "ERROR: invalid start step {}.  Please use a number in the range of 0-4".format(start)
+        exit(1)
+    if end < 0 or end > 4:
+        print "ERROR: invalid end step {}.  Please use a number in the range of 0-4".format(end)
+        exit(1)
+    if end < start:
+        print "ERROR: End step ({}) must be greater or equal to start step ({})".format(start,end)
+        exit(1)
+    if geo_ref_file is not None:
+        if not os.path.isfile(geo_ref_file):
+            print "ERROR: Unable to find geo_ref_file {}".format(geo_ref_file)
+            exit(1)
+    if model_type!='era' and model_type!="merra" and model_type != "merra2":
+        print "ERROR: Unknown model type {}".format(model_type)
+        exit(1)
 
     if start == 0:
         print "================================================================================"

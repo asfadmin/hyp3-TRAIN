@@ -45,11 +45,13 @@ def timestamp(date):
 
 def get_param(target):
     f = open('parms_aps.txt','r')
+    print "Reading {TARG} from file parms_aps.txt".format(TARG=target)
     for line in f:
         if target in line:
             t = line.split(':')
             return(t[1].strip())
-    print "ERROR: Unable to find parameter {PARM}".format(PARM=target)
+    print "ERROR: aps_weather_model was unable to find parameter {PARM} in the parms_aps.txt file".format(PARM=target)
+    print "ERROR: Please add this parameter to your parms_aps.txt file and try again"
     exit(1)
 
 def get_range(target,geo_ref_file=None):
@@ -68,7 +70,7 @@ def get_range(target,geo_ref_file=None):
             mylist = [ullon,lrlon]
             return mylist
         else:
-            print "ERROR: Unknown parameter {PARM}".format(PARM=target)
+            print "ERROR: Unknown parameter {PARM} in get_range function".format(PARM=target)
             exit(1)
     else:
         print "Reading {TARG} from file params_aps.txt".format(TARG=target)
@@ -104,7 +106,8 @@ def get_date_list():
             print "ERROR: Unable to find ifgday file {}".format(fname)
             exit(1)
     else:
-        print "ERROR: Unknown date_origin {}".format(origin)
+        print "ERROR: Unknown date_origin type ({}) read from parms_aps.txt file".format(origin)
+        exit(1)
 
     shortlist = list(set(datelist))
     shortlist.sort()

@@ -41,7 +41,11 @@ import saa_func_lib as saa
 
 def aps_weather_model_diff():
     
-    for myfile in glob.glob('*_*_unw_phase.tif'):
+    good_count = 0
+    file_list = glob.glob('*_*_unw_phase.tif')
+    total_count = len(file_list)
+    
+    for myfile in file_list:
         
         # get dates of this interferogram
         t = re.split("_",myfile)
@@ -71,6 +75,16 @@ def aps_weather_model_diff():
             name = date1 + "_" + date2 + "_unw_phase_corrected.tif"
             print "Writing file {}".format(name)
             saa.write_gdal_file_float(name,trans,proj,outdata)
+            
+            good_cnt = good_count + 1
+            
+    if (total_count == 0):
+        print "ERROR:  No unwrapped phase files (*_unw_phase.tif) found in current directory."
+        exit(1)
+    if (good_count < total_count):
+        print "Warning:  Only {} out of {} unwrapped phase files had corrections calculated".format(good_count,total_count)  
+    if (good_count == total_count):
+        print "Done creating corrected geotiffs"
 
 if __name__ == '__main__':
 

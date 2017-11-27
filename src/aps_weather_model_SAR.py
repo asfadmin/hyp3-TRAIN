@@ -75,7 +75,7 @@ def get_DEM(geo_ref_file=None):
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             region_res = trans[1]
         else:
-            print "Unknown DEM type"
+            print "ERROR: Unknown geo_ref_file file type {}".format(geo_ref_file)
             exit(1)
     
     dem_origin = aps.get_param("DEM_origin")
@@ -88,13 +88,16 @@ def get_DEM(geo_ref_file=None):
         print "Creating DEM file {} using opentopo...".format(dem_file)
         cmd = "wget -O%s \"http://opentopo.sdsc.edu/otr/getdem?demtype=SRTMGL1&west=%s&south=%s&east=%s&north=%s&outputFormat=GTiff\"" % (dem_file,minlon,minlat,maxlon,maxlat) 
         execute(cmd)
-    else:
+    elif dem_origin == "file":
         if not os.path.isfile(dem_file):
             print "ERROR: DEM file {} does not exist".format(dem_file)
             exit(1)
         else:
             print "Reading in pre-existing DEM file {}".format(dem_file)
-         
+    else:
+        print "ERROR: Unknown DEM_origin {} read from file parms_aps.txt".format(dem_origin)
+        exit(1)
+        
     (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
     if np.abs(float(trans[1]) - float(region_res))>10e-9:
         print "Resampling DEM file to match region_res"    
@@ -153,7 +156,12 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
     utc = float(aps.get_param('UTC_sat'))
     dates, tmp = aps.get_date_list()
     n_dates = len(dates)
-     
+    
+    if geo_ref_file is not None:
+        if not os.path.isfile(geo_ref_file):
+            print "ERROR: Unable to find geo_ref_file {}".format(geo_ref_file)
+            exit(1)
+            
     dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(geo_ref_file)
 
     lonmin = np.floor(xmin)-1
@@ -171,7 +179,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
     del dem
 
     if cdslices != len(cdI):
-       print "ERROR: length mistmatch"
+       print "INTERNAL ERROR: length mistmatch"
        print "cdslices {}".format(cdslices)
        print "len(cdI) {}".format(len(cdI))
        print "cdI {}".format(cdI)

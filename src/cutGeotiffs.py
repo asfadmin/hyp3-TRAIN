@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 ###############################################################################
-# CutUtmGeotiffs
+# CutGeotiffs
 #
 # Project:  APD 
 # Purpose:  Cut out a bunch of geotiffs to the same area
@@ -43,7 +43,6 @@ def getCorners(fi):
     ullat1 = t1[3]
     lrlon1 = t1[0] + x1*t1[1]
     lrlat1 = t1[3] + y1*t1[5]
-
     return (ullon1,ullat1,lrlon1,lrlat1)
 
 def getOverlap(coords,fi):
@@ -84,9 +83,6 @@ def cutFiles(arg):
     ptr = p1.find("UTM zone ")
     if ptr != -1:
         (zone1,hemi) = [t(s) for t,s in zip((int,str), re.search("(\d+)(.)",p1[ptr:]).groups())]
-        print "zone is %s" % zone1
-        print "hemisphere is %s" % hemi
-
         for x in range(len(arg)-1):
             file2 = arg[x+1]
 
@@ -98,7 +94,6 @@ def cutFiles(arg):
             ptr = p2.find("UTM zone ")
             zone2 = re.search("(\d+)",p2[ptr:]).groups()
             zone2 = int(zone2[0])
-            print "zone 2 is %s" % zone2
 
             if zone1 != zone2:
                 print "Projections don't match... Reprojecting %s" % file2
@@ -112,18 +107,18 @@ def cutFiles(arg):
                 gdal.Warp(name,file2,dstSRS=proj,xRes=pixsize,yRes=pixsize)
                 arg[x+1] = name
 
+    # Find the overlap between all scenes
     coords = getCorners(arg[0])
     for x in range (len(arg)-1):
-        file1 = arg[x+1]
-        coords = getOverlap(coords,file1)
-        print coords
+        coords = getOverlap(coords,arg[x+1])
     
+    # Find the largest pixel size of all scenes
     pixSize = getPixSize(arg[0])
     for x in range (len(arg)-1):
         tmp = getPixSize(arg[x+1])
 	pixSize = max(pixSize,tmp)
-    print pixSize
-            
+     
+    # Finally, clip all scenes to the overlap region at the largest pixel size
     for x in range (len(arg)):
         file1 = arg[x]
         file1_new = file1.replace('.tif','_clip.tif')
@@ -133,9 +128,6 @@ def cutFiles(arg):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Clip a bunch of geotiffs to the same area.")
-    parser.add_argument("infiles",nargs='+',help="Geotiff files to clip; output will be have _clip append to the file name")
+    parser.add_argument("infiles",nargs='+',help="Geotiff files to clip; output will be have _clip appended to the file name")
     args = parser.parse_args()
     cutFiles(args.infiles)
-
-    
-    

@@ -2,7 +2,7 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 ###############################################################################
 # aps_weather_model_INSAR.py 
-#
+#g
 # Project:  APD TRAIN
 # Purpose:  Convert zenith hydrostatic and wet delays into phase corrections
 #          
@@ -192,6 +192,9 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
         region_lon_range = aps.get_range('region_lon_range')
         region_res = float(aps.get_param('region_res'))
     else:
+        if not os.path.isfile(geo_ref_file):
+            print "ERROR: Unable to find geo_ref_file {}".format(geo_ref_file)
+            exit(1)
         region_lat_range = None
         region_lon_range = None
         region_res = None       
@@ -215,6 +218,9 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
         ia_value = "float"
         print "Using a single float value for incidence angle ({})".format(incid_angle)
     except:
+        if not os.path.isfile(incid_angle):
+            print "ERROR: Unable to find incidence angle file {}".format(incid_angle)
+            exit(1)
         incid_angle, incid_angle_name = read_incid_angle_file(incid_angle)    
         ia_value = "file"
         print "Using file {} for incidence angle values".format(incid_angle_name)
