@@ -109,6 +109,7 @@ def aps_merra_files(order_flag,geo_ref_file=None):
     
     # download the data or write a file
     if int(order_flag) == 1:
+        new_list = []
         for i in range(len(date)):
             (path,myfile) = os.path.split(output_list[i])
             if not os.path.isdir(path):
@@ -116,21 +117,33 @@ def aps_merra_files(order_flag,geo_ref_file=None):
             if os.path.isfile(output_list[i]):
                 print "File {MYFILE} exists. Skipping...".format(MYFILE=myfile)
             else:
-                cmd = "wget -O{OUTFILE} \"{DOWNFILE}\"".format(OUTFILE=output_list[i],DOWNFILE=download_list[i])
-                execute(cmd)
-        for i in range(len(output_list)):
-            if not os.path.isfile(output_list[i]):
-                print "ERROR:  Unable to find MERRA2 file {}".format(fileName)
+                try:
+                    cmd = "wget -O{OUTFILE} \"{DOWNFILE}\"".format(OUTFILE=output_list[i],DOWNFILE=download_list[i])
+                    execute(cmd)
+                    new_list.append(output_list[i])
+                except:
+                    print "WARNING: Unable to download {}".format(output_list[i]) 
+        for i in range(len(new_list)):
+            if not os.path.isfile(new_list[i]):
+                print "ERROR:  Unable to find MERRA2 file {}".format(new_list[i])
                 print ""
                 print "Apparently, something went wrong with the downloads."
                 print "Please make sure you have proper access to GESDISC."
                 print "Please see the documentation or https://disc.gsfc.nasa.gov/data-access"
                 print ""
                 exit(1)
-        if (os.path.getsize(output_list[i])<100000):
-            print "WARNING: File {} is quite small.  There may be a problem".format(output_list[i])
-            print "with the weather data downloads or weather data for that date may not exist."
-            print "Please be aware there may be a 4 week delay in publishing MERRA2 weather data."
+            if (os.path.getsize(new_list[i])<100000):
+                print "WARNING: File {} is quite small.  There may be a problem".format(output_list[i])
+                print "with the weather data downloads or weather data for that date may not exist."
+                print "Please be aware there may be a 4 week delay in publishing MERRA2 weather data."
+        if len(new_list) == 0:
+            print "WARNING:  NO WEATHER VALID DATA WAS DOWNLOADED!!!"
+            print "WARNING:  DELETING POTENTIALLY BAD FILES"
+            for myfile in output_list:
+                print "Checking the size of file {}".format(myfile)
+                if os.path.exists(myfile) and (os.path.getsize(myfile) == 0):
+                    os.remove(myfile)
+
     else:
         f = open("download_files.txt","w")
         for i in range(len(date)):
