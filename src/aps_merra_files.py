@@ -88,7 +88,7 @@ def aps_merra_files(order_flag,geo_ref_file=None):
     # create download file names
     download_list = []
     for i in range(len(date)):
-        ymd=date[i]
+        ymd=date[i][0:8]
         thistime = time[i]
         hour=thistime[0:2]
         year=ymd[0:4]
@@ -122,7 +122,9 @@ def aps_merra_files(order_flag,geo_ref_file=None):
                     execute(cmd)
                     new_list.append(output_list[i])
                 except:
-                    print "WARNING: Unable to download {}".format(output_list[i]) 
+                    print "WARNING: Unable to download {}".format(output_list[i])
+                    if os.path.isfile(output_list[i]):
+                        os.remove(output_list[i])
         for i in range(len(new_list)):
             if not os.path.isfile(new_list[i]):
                 print "ERROR:  Unable to find MERRA2 file {}".format(new_list[i])
