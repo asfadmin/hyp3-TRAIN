@@ -142,8 +142,8 @@ def times(utc,datelist):
     for i in range(len(datelist)):
         if t_after == 4:
             # must increment the date by 1 day
-            t=time.strptime(date_list[i],'%Y%m%d')
-            newdate=date(t.tm_year,t.tm_mon,t.tm_mday)+timedelta(1)
+            t=datetime.datetime.strptime(date_list[i][0:8],'%Y%m%d')
+            newdate= t + datetime.timedelta(1)
             thisdate = newdate.strftime('%Y%m%d')
         else:
             thisdate = date_list[i]
