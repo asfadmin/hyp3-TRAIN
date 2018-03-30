@@ -91,8 +91,8 @@ def get_date_list():
     if origin == 'asf':
         for myfile in glob.glob('*_*_unw_phase.tif'):
             t = myfile.split('_')
-            datelist.append(t[0])
-            datelist.append(t[1])
+            datelist.append(t[0][0:8])
+            datelist.append(t[1][0:8])
     elif origin == 'file':
         fname = get_param('ifgday_file')
         if os.path.isfile(fname):
