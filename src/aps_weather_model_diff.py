@@ -49,8 +49,8 @@ def aps_weather_model_diff():
         
         # get dates of this interferogram
         t = re.split("_",myfile)
-        date1 = t[0]
-        date2 = t[1]
+        date1 = t[0][0:8]
+        date2 = t[1][0:8]
         
         # check for correction file
         name = date1 + "_" + date2 + "_correction.bin"
