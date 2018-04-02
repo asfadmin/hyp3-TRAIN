@@ -30,6 +30,7 @@
 ###############################################################################
 import saa_func_lib as saa
 import re
+import logging
 import argparse
 from osgeo import gdal
 
@@ -68,16 +69,15 @@ def getOverlap(coords,fi):
 def cutFiles(arg):
 
     if len(arg) == 1:
-        print "Nothing to do!!!  Exiting..."
+        logging.info("Nothing to do!!!  Exiting...")
         exit(0)
 
     file1 = arg[0]
-    print "Clipping geotiff files starting with %s as the base." % file1
+    logging.info("Clipping geotiff files starting with %s as the base." % file1)
    
     # Open file1, get projection and pixsize
     dst1 = gdal.Open(file1)
     p1 = dst1.GetProjection()
-    print p1
     
     # Make sure that UTM projections match
     ptr = p1.find("UTM zone ")
@@ -96,13 +96,13 @@ def cutFiles(arg):
             zone2 = int(zone2[0])
 
             if zone1 != zone2:
-                print "Projections don't match... Reprojecting %s" % file2
+                logging.info("Projections don't match... Reprojecting %s" % file2)
                 if hemi == "N":
                     proj = ('EPSG:326%02d' % int(zone1))
                 else:
                     proj = ('EPSG:327%02d' % int(zone1))
-	        print "    reprojecting post image"
-                print "    proj is %s" % proj
+	        logging.info("    reprojecting post image")
+                logging.info("    proj is %s" % proj)
                 name = file2.replace(".tif","_reproj.tif")
                 gdal.Warp(name,file2,dstSRS=proj,xRes=pixsize,yRes=pixsize)
                 arg[x+1] = name
@@ -130,4 +130,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Clip a bunch of geotiffs to the same area.")
     parser.add_argument("infiles",nargs='+',help="Geotiff files to clip; output will be have _clip appended to the file name")
     args = parser.parse_args()
+
+    logFile = "cufGeotiffs_log.txt"
+    logging.basicConfig(filename=logFile,format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
+    logging.getLogger().addHandler(logging.StreamHandler())
+    logging.info("Starting run")
+
     cutFiles(args.infiles)

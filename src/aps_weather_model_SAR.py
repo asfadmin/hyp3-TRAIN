@@ -34,7 +34,6 @@
 # Import all needed modules right away
 #
 #####################
-import sys
 import os
 from get_dem import get_dem
 from osgeo import gdal
@@ -49,6 +48,7 @@ from aps_load_merra import aps_load_merra
 from aps_weather_model_nan_check import aps_weather_model_nan_check
 import datetime
 import time
+import logging
 from execute import execute
 
 
@@ -71,36 +71,36 @@ def get_DEM(geo_ref_file=None):
         region_res = aps.get_param('region_res')
     else:
         if ".tif" in geo_ref_file:
-            print "Reading geotiff reference file; getting resolution."
+            logging.info("Reading geotiff reference file; getting resolution.")
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             region_res = trans[1]
         else:
-            print "ERROR: Unknown geo_ref_file file type {}".format(geo_ref_file)
+            logging.error("ERROR: Unknown geo_ref_file file type {}".format(geo_ref_file))
             exit(1)
     
     dem_origin = aps.get_param("DEM_origin")
     dem_file = aps.get_param("DEM_file")
 
     if dem_origin == "asf":
-        print "Creating DEM file {} using the ASF DEM heap...".format(dem_file)
+        logging.info("Creating DEM file {} using the ASF DEM heap...".format(dem_file))
         get_dem(minlon,minlat,maxlon,maxlat,dem_file,0)
     elif dem_origin == "opentopo":
-        print "Creating DEM file {} using opentopo...".format(dem_file)
+        logging.info("Creating DEM file {} using opentopo...".format(dem_file))
         cmd = "wget -O%s \"http://opentopo.sdsc.edu/otr/getdem?demtype=SRTMGL1&west=%s&south=%s&east=%s&north=%s&outputFormat=GTiff\"" % (dem_file,minlon,minlat,maxlon,maxlat) 
         execute(cmd)
     elif dem_origin == "file":
         if not os.path.isfile(dem_file):
-            print "ERROR: DEM file {} does not exist".format(dem_file)
+            logging.error("ERROR: DEM file {} does not exist".format(dem_file))
             exit(1)
         else:
-            print "Reading in pre-existing DEM file {}".format(dem_file)
+            logging.info("Reading in pre-existing DEM file {}".format(dem_file))
     else:
-        print "ERROR: Unknown DEM_origin {} read from file parms_aps.txt".format(dem_origin)
+        logging.error("ERROR: Unknown DEM_origin {} read from file parms_aps.txt".format(dem_origin))
         exit(1)
         
     (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
     if np.abs(float(trans[1]) - float(region_res))>10e-9:
-        print "Resampling DEM file to match region_res"    
+        logging.info("Resampling DEM file to match region_res"    )
         gdal.Warp("tmp.dem",dem_file,xRes=region_res,yRes=region_res,resampleAlg="cubic",dstNodata=-32767)
         shutil.move("tmp.dem",dem_file)
         (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
@@ -159,7 +159,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
     
     if geo_ref_file is not None:
         if not os.path.isfile(geo_ref_file):
-            print "ERROR: Unable to find geo_ref_file {}".format(geo_ref_file)
+            logging.error("ERROR: Unable to find geo_ref_file {}".format(geo_ref_file))
             exit(1)
             
     dem,xmin,xmax,ymin,ymax,smpres,nncols,nnrows = get_DEM(geo_ref_file)
@@ -179,14 +179,14 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
     del dem
 
     if cdslices != len(cdI):
-       print "INTERNAL ERROR: length mistmatch"
-       print "cdslices {}".format(cdslices)
-       print "len(cdI) {}".format(len(cdI))
-       print "cdI {}".format(cdI)
+       logging.error("INTERNAL ERROR: length mistmatch")
+       logging.error("cdslices {}".format(cdslices))
+       logging.error("len(cdI) {}".format(len(cdI)))
+       logging.error("cdI {}".format(cdI))
        exit(1)
 
-    print "Interpolate to a maximum dem height of {HEIGHT}".format(HEIGHT=maxdem)
-    print "Using {} slices".format(cdslices)
+    logging.info("Interpolate to a maximum dem height of {HEIGHT}".format(HEIGHT=maxdem))
+    logging.info("Using {} slices".format(cdslices))
     
     date,time,frac = aps.times(utc,dates)
    
@@ -205,13 +205,13 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
             if not os.path.isfile(wfile):
                 no_data = no_data + 1
             else:
-                print "Loading input weather file: {}".format(wfile)
+                logging.info("Loading input weather file: {}".format(wfile))
             
                 # Load the weather model data
                 if model_type == "merra2":
                     (Temp,e,H,P,longrid,latgrid,xx,yy,lon0360_flag) = aps_load_merra(wfile) 
                 else:
-                    print "Model type {} not implemented!".format(model_type)
+                    logging.info("Model type {} not implemented!".format(model_type))
                     exit(1)
                     
  		# deal with NANs
@@ -329,8 +329,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
 		del ixi_temp
                 
                 cdstack_interp_dry = np.zeros((nnrows,nncols,cdslices),dtype=np.float32)
-                sys.stdout.write("processing dry stack")
-                sys.stdout.flush()
+                logging.info("processing dry stack")
                 for n in range(cdslices):
 #                    f = scipy.interpolate.interp2d(lonlist_matrix,latlist_matrix,cdstack_dry[:,:,n])
 #                    newslice = f(xivec,yivec)
@@ -339,9 +338,6 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                     newslice = sp.interpolate.bisplev(yivec,xivec,tck)
 
                     cdstack_interp_dry[:,:,n]=np.flipud(newslice)
-                    sys.stdout.write(".")
-                    sys.stdout.flush()
-                print
                 del cdstack_dry
 
 #                Parallel(n_jobs=8)(delayed(inter2d)(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,cdstack_interp_dry,n)
@@ -351,8 +347,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
 #                cdstack_interp_dry = [pool.apply(inter2d,args=(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,n)) for n in range(cdslices)]
 
                 cdstack_interp_wet = np.zeros((nnrows,nncols,cdslices),dtype=np.float32)
-                sys.stdout.write("processing wet stack")
-                sys.stdout.flush()
+                logging.info("processing wet stack")
                 
                 lonlist_matrix = lonlist_matrix[0,:]
                 latlist_matrix = latlist_matrix[:,0]
@@ -367,9 +362,6 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
 #                    newslice = sp.interpolate.bisplev(yivec,xivec,tck)
 
                     cdstack_interp_wet[:,:,n]=np.flipud(newslice)
-                    sys.stdout.write(".")
-                    sys.stdout.flush()
-                print
                 del cdstack_wet
                 
                 # keeping the coordinates in the same grid as the data
@@ -399,7 +391,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
         
         if no_data == 0:
             
-            print "Writing output files"
+            logging.info("Writing output files")
             
             outfile_wet_before = path + "/" + date[d] + "/" + date[d] + '_ZWD_before.xyz'
             outfile_wet_after = path + "/" + date[d] + "/" + date[d] + '_ZWD_after.xyz'
@@ -432,19 +424,27 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
             del hydrcorrection
             
             elapsed=aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)
-            print "{D} completed out of {L} in time {S}".format(D=d+1,L=length,S=elapsed)
+            logging.info("{D} completed out of {L} in time {S}".format(D=d+1,L=length,S=elapsed))
         else:
-            print "{D} completed out of {L} (NO DATA)".format(D=d+1,L=length)
+            logging.info("{D} completed out of {L} (NO DATA)".format(D=d+1,L=length))
         
     elapsed=aps.timestamp(datetime.datetime.now())-aps.timestamp(start)
-    print "Done!!! Completed all files in time {}".format(elapsed)
+    logging.info("Done!!! Completed all files in time {}".format(elapsed))
     
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(prog='aps_weather_model_SAR',
     description='Calculate zenith wet and hydrostatic delays')
   parser.add_argument("-g","--geo_ref_file",help="Name of file for georeferencing information")
-
   args = parser.parse_args()
+
+  logFile = "aps_weather_model_SAR_log.txt"
+  logging.basicConfig(filename=logFile,format='%(asctime)s - %(levelname)s - %(message)s',
+                      datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
+  logging.getLogger().addHandler(logging.StreamHandler())
+  logging.info("Starting run")
+
+
+
   aps_weather_model_SAR("merra2",geo_ref_file=args.geo_ref_file)
 

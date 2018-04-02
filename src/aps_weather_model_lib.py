@@ -39,24 +39,25 @@ import saa_func_lib as saa
 import numpy as np
 import datetime
 import time
+import logging
 
 def timestamp(date):
     return time.mktime(date.timetuple())
 
 def get_param(target):
     f = open('parms_aps.txt','r')
-    print "Reading {TARG} from file parms_aps.txt".format(TARG=target)
+    logging.info("Reading {TARG} from file parms_aps.txt".format(TARG=target))
     for line in f:
         if target in line:
             t = line.split(':')
             return(t[1].strip())
-    print "ERROR: aps_weather_model was unable to find parameter {PARM} in the parms_aps.txt file".format(PARM=target)
-    print "ERROR: Please add this parameter to your parms_aps.txt file and try again"
+    logging.error("ERROR: aps_weather_model was unable to find parameter {PARM} in the parms_aps.txt file".format(PARM=target)) 
+    logging.error("ERROR: Please add this parameter to your parms_aps.txt file and try again")
     exit(1)
 
 def get_range(target,geo_ref_file=None):
     if geo_ref_file is not None and ".tif" in geo_ref_file:
-        print "Reading {TARG} from file {FILE}".format(TARG=target,FILE=geo_ref_file)
+        logging.info("Reading {TARG} from file {FILE}".format(TARG=target,FILE=geo_ref_file))
         if target == 'region_lat_range':
             (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullat = trans[3]
@@ -70,10 +71,10 @@ def get_range(target,geo_ref_file=None):
             mylist = [ullon,lrlon]
             return mylist
         else:
-            print "ERROR: Unknown parameter {PARM} in get_range function".format(PARM=target)
+            logging.error("ERROR: Unknown parameter {PARM} in get_range function".format(PARM=target))
             exit(1)
     else:
-        print "Reading {TARG} from file params_aps.txt".format(TARG=target)
+        logging.info("Reading {TARG} from file params_aps.txt".format(TARG=target))
         f = open('parms_aps.txt','r')
         for line in f:
             if target in line:
@@ -81,7 +82,7 @@ def get_range(target,geo_ref_file=None):
                 s = t[1].split()
                 mylist = [float(s[0]),float(s[1])]
                 return mylist
-        print "ERROR: Unable to find parameter {PARM}".format(PARM=target)
+        logging.error("ERROR: Unable to find parameter {PARM}".format(PARM=target))
         exit(1)
 
 def get_date_list():
@@ -103,20 +104,20 @@ def get_date_list():
                 datelist.append(t[1].strip())
             f.close()
         else:
-            print "ERROR: Unable to find ifgday file {}".format(fname)
+            logging.error("ERROR: Unable to find ifgday file {}".format(fname))
             exit(1)
     else:
-        print "ERROR: Unknown date_origin type ({}) read from parms_aps.txt file".format(origin)
+        logging.error("ERROR: Unknown date_origin type ({}) read from parms_aps.txt file".format(origin))
         exit(1)
 
     shortlist = list(set(datelist))
     shortlist.sort()
     if not shortlist:
-        print "ERROR: No dates found; Nothing to do"
-        print ""
+        logging.error("ERROR: No dates found; Nothing to do")
+        logging.error("")
         if origin == 'asf':
-            print "No files of the form *_unw_phase.tif were found in {}".format(os.getcwd())
-            print "You must place your unwrapped phase geotiffs in the directory where you ran the code."
+            logging.error("No files of the form *_unw_phase.tif were found in {}".format(os.getcwd()))
+            logging.error("You must place your unwrapped phase geotiffs in the directory where you ran the code.")
         exit(1)
 
     return shortlist, datelist

@@ -33,6 +33,7 @@
 #
 #####################
 import numpy as np
+import logging
 from scipy.interpolate import griddata
 
 def aps_weather_model_nan_check(Temp,e,P,longrid,latgrid):
@@ -74,7 +75,7 @@ def aps_weather_model_nan_check(Temp,e,P,longrid,latgrid):
             e[:,:,step_level[k]] = np.reshape(temp_data,(dims[0],dims[1]))
         elif n_nan == n_pixels:
             if k==1:
-                print "WARNING:  The top of the atmosphere has no data"
+                logging.warning("WARNING:  The top of the atmosphere has no data")
             Temp[:,:,step_level[k]]=Temp[:,:,step_level[k-1]]
             e[:,:,step_level[k]]=e[:,:,step_level[k-1]]
         else:
