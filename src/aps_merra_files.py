@@ -119,7 +119,13 @@ def aps_merra_files(order_flag,geo_ref_file=None):
                 logging.info("File {MYFILE} exists. Skipping...".format(MYFILE=myfile))
             else:
                 try:
-                    cmd = "wget -O{OUTFILE} \"{DOWNFILE}\"".format(OUTFILE=output_list[i],DOWNFILE=download_list[i])
+                    home = expanduser("~")
+                    fname = "{}/.urs_cookies".format(home)
+                    if not os.path.isfile(fname):
+                        with open(fname, 'a'):
+                            os.utime(fname, times)                         
+                    options = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --keep-session-cookies "
+                    cmd = "wget {OPTIONS} -O{OUTFILE} \"{DOWNFILE}\"".format(OPTIONS=options,OUTFILE=output_list[i],DOWNFILE=download_list[i])
                     execute(cmd)
                     new_list.append(output_list[i])
                 except:
