@@ -41,6 +41,7 @@ import numpy as np
 from datetime import date, timedelta
 import aps_weather_model_lib as aps
 from os.path import expanduser
+import logging
 
 def aps_merra_files(order_flag,geo_ref_file=None):  
   
@@ -60,12 +61,12 @@ def aps_merra_files(order_flag,geo_ref_file=None):
     home = expanduser("~")
     fileName = home + '/.netrc'
     if not os.path.isfile(fileName):
-        print "ERROR: No .netrc file found in {}".format(home)
-        print ""
-        print "You will need a .netrc file in order to downoad the MERRA2 weather model data."
-        print "Please see the documentation or the webpage https://disc.gsfc.nasa.gov/data-access"
-        print "for information on how to create an Earthdata login and a .netrc file"
-        print ""
+        logging.error("ERROR: No .netrc file found in {}".format(home))
+        logging.error("")
+        logging.error("You will need a .netrc file in order to downoad the MERRA2 weather model data.")
+        logging.error("Please see the documentation or the webpage https://disc.gsfc.nasa.gov/data-access")
+        logging.error("for information on how to create an Earthdata login and a .netrc file")
+        logging.error("")
         exit(1)
    
     # setup parameters
@@ -115,41 +116,46 @@ def aps_merra_files(order_flag,geo_ref_file=None):
             if not os.path.isdir(path):
                 os.makedirs(path)
             if os.path.isfile(output_list[i]):
-                print "File {MYFILE} exists. Skipping...".format(MYFILE=myfile)
+                logging.info("File {MYFILE} exists. Skipping...".format(MYFILE=myfile))
             else:
                 try:
-                    cmd = "wget -O{OUTFILE} \"{DOWNFILE}\"".format(OUTFILE=output_list[i],DOWNFILE=download_list[i])
+                    home = expanduser("~")
+                    fname = "{}/.urs_cookies".format(home)
+                    if not os.path.isfile(fname):
+                        with open(fname, 'a'):
+                            os.utime(fname, times)                         
+                    options = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --keep-session-cookies "
+                    cmd = "wget {OPTIONS} -O{OUTFILE} \"{DOWNFILE}\"".format(OPTIONS=options,OUTFILE=output_list[i],DOWNFILE=download_list[i])
                     execute(cmd)
                     new_list.append(output_list[i])
                 except:
-                    print "WARNING: Unable to download {}".format(output_list[i])
+                    logging.warning("WARNING: Unable to download {}".format(output_list[i]))
                     if os.path.isfile(output_list[i]):
                         os.remove(output_list[i])
         for i in range(len(new_list)):
             if not os.path.isfile(new_list[i]):
-                print "ERROR:  Unable to find MERRA2 file {}".format(new_list[i])
-                print ""
-                print "Apparently, something went wrong with the downloads."
-                print "Please make sure you have proper access to GESDISC."
-                print "Please see the documentation or https://disc.gsfc.nasa.gov/data-access"
-                print ""
+                logging.error("ERROR:  Unable to find MERRA2 file {}".format(new_list[i]))
+                logging.error("")
+                logging.error("Apparently, something went wrong with the downloads.")
+                logging.error("Please make sure you have proper access to GESDISC.")
+                logging.error("Please see the documentation or https://disc.gsfc.nasa.gov/data-access")
+                logging.error("")
                 exit(1)
             if (os.path.getsize(new_list[i])<100000):
-                print "WARNING: File {} is quite small.  There may be a problem".format(output_list[i])
-                print "with the weather data downloads or weather data for that date may not exist."
-                print "Please be aware there may be a 4 week delay in publishing MERRA2 weather data."
+                logging.warning("WARNING: File {} is quite small.  There may be a problem".format(output_list[i]))
+                logging.warning("with the weather data downloads or weather data for that date may not exist.")
+                logging.warning("Please be aware there may be a 4 week delay in publishing MERRA2 weather data.")
         if len(new_list) == 0:
-            print "WARNING:  NO WEATHER VALID DATA WAS DOWNLOADED!!!"
-            print "WARNING:  DELETING POTENTIALLY BAD FILES"
+            logging.warning("WARNING:  NO WEATHER VALID DATA WAS DOWNLOADED!!!")
+            logging.warning("WARNING:  DELETING POTENTIALLY BAD FILES")
             for myfile in output_list:
-                print "Checking the size of file {}".format(myfile)
+                logging.debug("Checking the size of file {}".format(myfile))
                 if os.path.exists(myfile) and (os.path.getsize(myfile) == 0):
                     os.remove(myfile)
-
     else:
         f = open("download_files.txt","w")
         for i in range(len(date)):
-            print download_list[i]
+            logging.info("{}".format(download_list[i]))
             f.write("{DOWNFILE}\n".format(DOWNFILE=download_list[i]))
         f.close()
 
@@ -161,6 +167,12 @@ if __name__ == '__main__':
   parser.add_argument("order_flag",help="0 - generate download file; 1 - download data")
   args = parser.parse_args()
 
+  logFile = "aps_merra_files_log.txt"
+  logging.basicConfig(filename=logFile,format='%(asctime)s - %(levelname)s - %(message)s',
+                      datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
+  logging.getLogger().addHandler(logging.StreamHandler())
+  logging.info("Starting run")
+ 
   if args.geo_ref_file is None:
       aps_merra_files(args.order_flag)
   else:

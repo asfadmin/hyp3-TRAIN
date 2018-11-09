@@ -42,6 +42,7 @@ import scipy.integrate
 import scipy.interpolate
 import datetime
 import time
+import logging
 from osgeo import gdal
 
 def get_ll_mat(geo_ref_file):
@@ -64,7 +65,7 @@ def get_ll_mat(geo_ref_file):
     else:
         ll_file = aps.get_param('ll_file')
         if not os.path.isfile(ll_file):
-            print "ERROR: Lat,Lon file {} does not exist.".format(ll_file)
+            logging.error("ERROR: Lat,Lon file {} does not exist.".format(ll_file))
             exit(1)
         f = open(ll_file,'r')
         lat = []
@@ -87,7 +88,7 @@ def read_incid_angle_file(fi):
         return incid_angle, incid_angle_name
 
 def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5, geo_ref_file=None):
-    print "Reading file {}".format(infile)
+    logging.info("Reading file {}".format(infile))
     fid = open(infile,'rb')
     data = np.fromfile(fid)
     data = np.reshape(data, (-1,3))
@@ -103,7 +104,7 @@ def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5,
         lon_grid = np.ndarray.flatten(lon_grid,order='F')
         lat_grid = np.ndarray.flatten(lat_grid,order='F')
         z_output = np.zeros(len(output_grid[:,0]))      
-        print "    Buffering in {} deg chunks...".format(chunk_size)
+        logging.info("    Buffering in {} deg chunks...".format(chunk_size))
         for k in range(len(lat_grid)):
             ix_temp1 = np.where(output_grid[:,0]>=lon_grid[k])
             ix_temp2 = np.where(output_grid[:,0]<=lon_grid[k]+chunk_size)
@@ -129,9 +130,8 @@ def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5,
                 tmp_output = sp.interpolate.griddata(input_grid,data[ix_temp_full,2],output_grid[ix_temp])
                 
                 if len(ix_temp) == len(tmp_output):
-                    # print "storing data in z_output"
                     z_output[ix_temp] = tmp_output
-            print "        {K}/{TOT}".format(K=k+1,TOT=len(lat_grid))
+            logging.info("        {K}/{TOT}".format(K=k+1,TOT=len(lat_grid)))
     else:
         input_grid = np.zeros((len(data[:,0]),2))
         input_grid[:,0] = data[:,0]
@@ -142,16 +142,16 @@ def load_weather_model_SAR(infile, output_grid, chunk_flag=True, chunk_size=0.5,
 def load_weather_model_SAR2(infile,geo_ref_file,region_lat_range,region_lon_range,region_res):
     demfile = aps.get_param('DEM_file')
     if not os.path.isfile(demfile):
-        print "ERROR: DEM file {} doesn't exist.  Did you run step 2 already?"
+        logging.error("ERROR: DEM file {} doesn't exist.  Did you run step 2 already?")
         exit(1)
     (x1,y1,trans1,proj1,data1) = saa.read_gdal_file(saa.open_gdal_file(demfile))
-    print "Reading file {}".format(infile)
+    logging.info("Reading file {}".format(infile))
     fid = open(infile,'rb')
     data = np.fromfile(fid)
     data = np.reshape(data, (-1,3))
     
     if len(data[:,2]) != x1*y1:
-        print "Error: data size mismatch - len = {}, x*y = {}".format(len(data[:,2]),x1*y1)
+        logging.error("Error: data size mismatch - len = {}, x*y = {}".format(len(data[:,2]),x1*y1))
         exit(1)
     data = data[:,2]
     data = np.reshape(data,(x1,y1))
@@ -184,7 +184,7 @@ def load_weather_model_SAR2(infile,geo_ref_file,region_lat_range,region_lon_rang
 def aps_weather_model_INSAR(model_type,geo_ref_file=None):
 
     start = datetime.datetime.now()
-    print "Calculating phase delays"
+    logging.info("Calculating phase delays")
     
     path = aps.get_param('{}_datapath'.format(model_type))
     if geo_ref_file is None:
@@ -193,7 +193,7 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
         region_res = float(aps.get_param('region_res'))
     else:
         if not os.path.isfile(geo_ref_file):
-            print "ERROR: Unable to find geo_ref_file {}".format(geo_ref_file)
+            logging.error("ERROR: Unable to find geo_ref_file {}".format(geo_ref_file))
             exit(1)
         region_lat_range = None
         region_lon_range = None
@@ -216,14 +216,14 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
     try:
         incid_angle = float(incid_angle)
         ia_value = "float"
-        print "Using a single float value for incidence angle ({})".format(incid_angle)
+        logging.info("Using a single float value for incidence angle ({})".format(incid_angle))
     except:
         if not os.path.isfile(incid_angle):
-            print "ERROR: Unable to find incidence angle file {}".format(incid_angle)
+            logging.error("ERROR: Unable to find incidence angle file {}".format(incid_angle))
             exit(1)
         incid_angle, incid_angle_name = read_incid_angle_file(incid_angle)    
         ia_value = "file"
-        print "Using file {} for incidence angle values".format(incid_angle_name)
+        logging.info("Using file {} for incidence angle values".format(incid_angle_name))
         
     lonlat = get_ll_mat(geo_ref_file)
     
@@ -251,7 +251,7 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
                 
 #                outfile = "hydro_correction" + str(k) + ".bin"
 #                d_hydro[:,k].tofile(outfile)
-                print("Time to read and interpolate file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
+                logging.info("Time to read and interpolate file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
                 lasttime = datetime.datetime.now()
                 # d_wet[:,k] = load_weather_model_SAR(model_file_wet,lonlat,geo_ref_file=geo_ref_file)
                 
@@ -259,25 +259,25 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
                 
 #                outfile = "wet_correction" + str(k) + ".bin"
 #                d_wet[:,k].tofile(outfile)
-                print("Time to read and interpolate file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
+                logging.info("Time to read and interpolate file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
                 counter = counter + 1
             else:
-                print "No correction for {}. Skipping".format(dates[k])
+                logging.info("No correction for {}. Skipping".format(dates[k]))
                 ix_no_weather_model_data.append(k)
               
-        print "{CNT} out of {NDATES} SAR images have a tropospheric delay estimated".format(CNT=counter,NDATES=n_dates)
+        logging.info("{CNT} out of {NDATES} SAR images have a tropospheric delay estimated".format(CNT=counter,NDATES=n_dates))
 
     else:
-        print "Reading in previously calculated intermediate products"
+        logging.info("Reading in previously calculated intermediate products")
         for k in range(n_dates):
             lasttime = datetime.datetime.now()
             infile = "hydro_correction" + str(k) + ".bin"
             d_hydro[:,k] = np.fromfile(infile,dtype='double')
-            print("Time to read file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
+            logging.info("Time to read file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
             lasttime = datetime.datetime.now()
             infile = "wet_correction" + str(k) + ".bin"
             d_wet[:,k] = np.fromfile(infile,dtype='double')
-            print("Time to read file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
+            logging.info("Time to read file {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(lasttime)))
             
     d_total = d_hydro + d_wet
     
@@ -306,14 +306,14 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
     
     for k in range(n_igrams):
         if idx_master[k] in ix_no_weather_model_data or idx_slave[k] in ix_no_weather_model_data:
-            print "No weather data correction found for either {} or {}".format(dates_master[k],dates_slave[k])
+            logging.info("No weather data correction found for either {} or {}".format(dates_master[k],dates_slave[k]))
         else:
             ph_tropo[:] = ph_SAR[:,idx_master[k]] - ph_SAR[:,idx_slave[k]]
             ph_tropo_hydro[:] = ph_SAR_hydro[:,idx_master[k]] - ph_SAR_hydro[:,idx_slave[k]]
             ph_tropo_wet[:] = ph_SAR_wet[:,idx_master[k]] - ph_SAR_wet[:,idx_slave[k]]
         
             outfile = dates_master[k] + "_" + dates_slave[k] + "_correction.bin"
-            print "Writing outfile {}".format(outfile)
+            logging.info("Writing outfile {}".format(outfile))
             ph_tropo.tofile(outfile)
 
             outfile = dates_master[k] + "_" + dates_slave[k] + "_hydro_correction.bin"
@@ -322,14 +322,20 @@ def aps_weather_model_INSAR(model_type,geo_ref_file=None):
             outfile = dates_master[k] + "_" + dates_slave[k] + "_wet_correction.bin"
             ph_tropo_wet.tofile(outfile)
 
-    print "Total processing time {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(start))
+    logging.info("Total processing time {}".format(aps.timestamp(datetime.datetime.now())-aps.timestamp(start)))
 
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(prog='aps_weather_model_INSAR',
     description='Convert zenith delay to phase delay')
   parser.add_argument("-g","--geo_ref_file",help="Name of file for georeferencing information")
-
   args = parser.parse_args()
+
+  logFile = "aps_weather_model_INSAR_log.txt"
+  logging.basicConfig(filename=logFile,format='%(asctime)s - %(levelname)s - %(message)s',
+                      datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
+  logging.getLogger().addHandler(logging.StreamHandler())
+  logging.info("Starting run")
+
   aps_weather_model_INSAR(geo_ref_file=args.geo_ref_file)
 
