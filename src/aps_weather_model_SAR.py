@@ -101,7 +101,7 @@ def get_DEM(geo_ref_file=None):
     (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
     if np.abs(float(trans[1]) - float(region_res))>10e-9:
         logging.info("Resampling DEM file to match region_res"    )
-        gdal.Warp("tmp.tif",dem_file,xRes=region_res,yRes=region_res,resampleAlg="cubic",dstNodata=-32767,format="GTiff"))
+        gdal.Warp("tmp.tif",dem_file,xRes=region_res,yRes=region_res,resampleAlg="cubic",dstNodata=-32767,format="GTiff")
         shutil.move("tmp.tif",dem_file)
         (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(dem_file))
     nncols = x
