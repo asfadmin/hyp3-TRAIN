@@ -83,7 +83,7 @@ def get_DEM(geo_ref_file=None):
 
     if dem_origin == "asf":
         logging.info("Creating DEM file {} using the ASF DEM heap...".format(dem_file))
-        get_dem(minlon,minlat,maxlon,maxlat,dem_file,0)
+        get_ll_dem(minlon,minlat,maxlon,maxlat,dem_file)
     elif dem_origin == "opentopo":
         logging.info("Creating DEM file {} using opentopo...".format(dem_file))
         cmd = "wget -O%s \"http://opentopo.sdsc.edu/otr/getdem?demtype=SRTMGL1&west=%s&south=%s&east=%s&north=%s&outputFormat=GTiff\"" % (dem_file,minlon,minlat,maxlon,maxlat) 
