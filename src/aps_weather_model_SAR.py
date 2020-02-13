@@ -35,7 +35,7 @@
 #
 #####################
 import os
-from get_dem import get_dem
+from get_dem import get_ll_dem
 from osgeo import gdal
 import argparse
 import aps_weather_model_lib as aps
