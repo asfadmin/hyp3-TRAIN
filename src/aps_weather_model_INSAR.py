@@ -51,16 +51,16 @@ def get_ll_mat(geo_ref_file):
         lonlat = np.zeros((x*y,2))
         ullat = trans[3]
         ullon = trans[0]
-	lon = np.zeros(x)
+        lon = np.zeros(x)
         for i in range(x):
             lon[i] = ullon + i*trans[1]
         lat = np.zeros(y)
         for i in range(y):
             lat[i] = ullat + i*trans[5]
-	[xi,yi] = np.meshgrid(lon,lat)
+        [xi,yi] = np.meshgrid(lon,lat)
         xi = np.reshape(xi,-1)
         yi = np.reshape(yi,-1)
-	lonlat[:,0] = xi
+        lonlat[:,0] = xi
         lonlat[:,1] = yi
     else:
         ll_file = aps.get_param('ll_file')

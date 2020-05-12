@@ -52,7 +52,7 @@ def aps_weather_model_nan_check(Temp,e,P,longrid,latgrid):
 
     for k in range(len(Pressure_level)):
         test = np.squeeze(Temp[:,:,step_level[k]])
-   	ix_nan = np.isnan(test)
+        ix_nan = np.isnan(test)
         count = np.zeros((dims[0],dims[1]))
         for i in range(dims[0]):
            for j in range(dims[1]):

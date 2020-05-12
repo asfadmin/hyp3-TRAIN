@@ -214,10 +214,10 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                     logging.info("Model type {} not implemented!".format(model_type))
                     exit(1)
                     
- 		# deal with NANs
+                # deal with NANs
                 (Temp,e) = aps_weather_model_nan_check(Temp,e,P,longrid,latgrid)                
 
-		# define weather model grid nodes
+                # define weather model grid nodes
                 latlist = np.reshape(latgrid[:,:,1],-1)
                 lonlist = np.reshape(longrid[:,:,1],-1)
                 xlist = np.reshape(xx,-1,order='F')
@@ -269,7 +269,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                 glocal = g[midx,midy,0]
                 Rlocal = Re[midx,midy,0]
 
-		del g
+                del g
                 del Re
                 del H
                 
@@ -326,7 +326,7 @@ def aps_weather_model_SAR(model_type,geo_ref_file=None):
                 lonlist_matrix = np.reshape(lonlist,(ixi_temp[0],-1),order='F')
                 latlist_matrix = np.reshape(latlist,(ixi_temp[0],-1),order='F')
                 del ix_temp
-		del ixi_temp
+                del ixi_temp
                 
                 cdstack_interp_dry = np.zeros((nnrows,nncols,cdslices),dtype=np.float32)
                 logging.info("processing dry stack")

@@ -101,7 +101,7 @@ def cutFiles(arg):
                     proj = ('EPSG:326%02d' % int(zone1))
                 else:
                     proj = ('EPSG:327%02d' % int(zone1))
-	        logging.info("    reprojecting post image")
+                logging.info("    reprojecting post image")
                 logging.info("    proj is %s" % proj)
                 name = file2.replace(".tif","_reproj.tif")
                 gdal.Warp(name,file2,dstSRS=proj,xRes=pixsize,yRes=pixsize)
@@ -116,7 +116,7 @@ def cutFiles(arg):
     pixSize = getPixSize(arg[0])
     for x in range (len(arg)-1):
         tmp = getPixSize(arg[x+1])
-	pixSize = max(pixSize,tmp)
+        pixSize = max(pixSize,tmp)
      
     # Finally, clip all scenes to the overlap region at the largest pixel size
     for x in range (len(arg)):
