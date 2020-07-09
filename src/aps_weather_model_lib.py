@@ -32,14 +32,16 @@
 # Import all needed modules right away
 #
 #####################
+import datetime
+
 import glob
+import logging
 import os
 import re
-from hyp3lib import saa_func_lib as saa
-import numpy as np
-import datetime
 import time
-import logging
+
+import numpy as np
+from hyp3lib import saa_func_lib as saa
 
 
 def timestamp(date):
@@ -129,8 +131,8 @@ def get_date_list():
 
 
 def times(utc, datelist):
-    t_before = int(np.floor(float(utc) / 21600))
-    t_after = int(np.ceil(float(utc) / 21600))
+    t_before = np.floor(float(utc) // 21600)
+    t_after = np.ceil(float(utc) // 21600)
 
     temp = utc - 21600 * t_before
     f_after = temp / 21600
@@ -138,7 +140,6 @@ def times(utc, datelist):
         f_after = 1
     f_before = 1 - f_after
     timelist = ['0000', '0600', '1200', '1800', '0000']
-    n_SAR = len(datelist)
     date_list = []
     time_list = []
     frac_list = []

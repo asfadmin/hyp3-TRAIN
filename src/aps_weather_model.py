@@ -33,16 +33,17 @@
 # Import all needed modules right away
 #
 #####################
-import os
 import argparse
+import datetime
+import logging
+
+import os
+
 import aps_weather_model_lib as aps
 from aps_merra_files import aps_merra_files
-from aps_weather_model_SAR import aps_weather_model_SAR
 from aps_weather_model_INSAR import aps_weather_model_INSAR
+from aps_weather_model_SAR import aps_weather_model_SAR
 from aps_weather_model_diff import aps_weather_model_diff
-import datetime
-import time
-import logging
 
 
 def aps_weather_model(model_type, start, end, geo_ref_file=None):

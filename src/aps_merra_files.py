@@ -32,31 +32,19 @@
 # Import all needed modules right away
 #
 #####################
-import os
-from hyp3lib.execute import execute
 import argparse
-import glob
-from os.path import expanduser
-import numpy as np
-from datetime import date, timedelta
-import aps_weather_model_lib as aps
-from os.path import expanduser
 import logging
+
+import os
+from os.path import expanduser
+
+import aps_weather_model_lib as aps
+from hyp3lib.execute import execute
 
 
 def aps_merra_files(order_flag, geo_ref_file=None):
     # get list of interferograms
     datelist, tmp = aps.get_date_list()
-    n_files = len(datelist)
-
-    # read URS credentials
-    #    home = expanduser("~")
-    #    myfile = home + '/' + '.merrapass'
-    #    f = open(myfile,'r')
-    #    lines = f.read()
-    #    t = lines.split('\n')
-    #    username = t[0]
-    #    password = t[1]
 
     home = expanduser("~")
     fileName = home + '/.netrc'
@@ -124,7 +112,7 @@ def aps_merra_files(order_flag, geo_ref_file=None):
                     fname = "{}/.urs_cookies".format(home)
                     if not os.path.isfile(fname):
                         with open(fname, 'a'):
-                            os.utime(fname, times)
+                            os.utime(fname, times=None)
                     options = "--load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --keep-session-cookies "
                     cmd = "wget {OPTIONS} -O{OUTFILE} \"{DOWNFILE}\"".format(OPTIONS=options, OUTFILE=output_list[i],
                                                                              DOWNFILE=download_list[i])

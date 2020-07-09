@@ -32,17 +32,17 @@
 # Import all needed modules right away
 #
 #####################
-import os, re
 import argparse
+import datetime
+import logging
+
+import os
+import re
+
 import aps_weather_model_lib as aps
 import hyp3lib.saa_func_lib as saa
 import numpy as np
 import scipy as sp
-import scipy.integrate
-import scipy.interpolate
-import datetime
-import time
-import logging
 from osgeo import gdal
 
 
@@ -174,8 +174,8 @@ def load_weather_model_SAR2(infile, geo_ref_file, region_lat_range, region_lon_r
         ullat = max(region_lat_range)
         lrlon = min(region_lon_range)
         ullon = max(region_lon_range)
-        y = int(abs(lrlat - ullat) / region_res)
-        x = int(abs(lrlon - ullon) / region_res)
+        y = abs(lrlat - ullat) // region_res
+        x = abs(lrlon - ullon) // region_res
     output_bounds = [min(lrlon, ullon), min(lrlat, ullat), max(lrlon, ullon), max(lrlat, ullat)]
     ds = gdal.Warp('', outfile, format='MEM', width=x, height=y, outputBounds=output_bounds, resampleAlg='bilinear')
     banddata = ds.GetRasterBand(1)
@@ -204,7 +204,7 @@ def aps_weather_model_INSAR(model_type, geo_ref_file=None):
         region_res = None
     dates, datelist = aps.get_date_list()
     n_dates = len(dates)
-    n_igrams = int(len(datelist) / 2)
+    n_igrams = len(datelist) // 2
     dates_master = datelist[0:len(datelist) + 1:2]
     dates_slave = datelist[1:len(datelist) + 1:2]
     idx_master = []
@@ -249,23 +249,17 @@ def aps_weather_model_INSAR(model_type, geo_ref_file=None):
 
             if os.path.isfile(model_file_wet) and os.path.isfile(model_file_hydro):
                 lasttime = datetime.datetime.now()
-                # d_hydro[:,k] = load_weather_model_SAR(model_file_hydro,lonlat,geo_ref_file=geo_ref_file)
 
                 d_hydro[:, k] = load_weather_model_SAR2(model_file_hydro, geo_ref_file, region_lat_range,
                                                         region_lon_range, region_res)
 
-                #                outfile = "hydro_correction" + str(k) + ".bin"
-                #                d_hydro[:,k].tofile(outfile)
                 logging.info("Time to read and interpolate file {}".format(
                     aps.timestamp(datetime.datetime.now()) - aps.timestamp(lasttime)))
                 lasttime = datetime.datetime.now()
-                # d_wet[:,k] = load_weather_model_SAR(model_file_wet,lonlat,geo_ref_file=geo_ref_file)
 
                 d_wet[:, k] = load_weather_model_SAR2(model_file_wet, geo_ref_file, region_lat_range, region_lon_range,
                                                       region_res)
 
-                #                outfile = "wet_correction" + str(k) + ".bin"
-                #                d_wet[:,k].tofile(outfile)
                 logging.info("Time to read and interpolate file {}".format(
                     aps.timestamp(datetime.datetime.now()) - aps.timestamp(lasttime)))
                 counter = counter + 1

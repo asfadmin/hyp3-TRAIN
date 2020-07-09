@@ -32,8 +32,9 @@
 # Import all needed modules right away
 #
 #####################
-import numpy as np
 import logging
+
+import numpy as np
 from scipy.interpolate import griddata
 
 

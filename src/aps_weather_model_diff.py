@@ -32,13 +32,15 @@
 # Import all needed modules right away
 #
 #####################
-import re, os
 import argparse
-from osgeo import gdal
 import glob
-import numpy as np
-import hyp3lib.saa_func_lib as saa
 import logging
+
+import os
+import re
+
+import hyp3lib.saa_func_lib as saa
+import numpy as np
 
 
 def aps_weather_model_diff():

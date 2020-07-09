@@ -34,27 +34,22 @@
 # Import all needed modules right away
 #
 #####################
-import os
-from hyp3lib.get_dem import get_ll_dem
-from osgeo import gdal
 import argparse
+import datetime
+import logging
+
+import os
+import shutil
+
 import aps_weather_model_lib as aps
-from hyp3lib import saa_func_lib as saa
 import numpy as np
 import scipy as sp
-import scipy.integrate
-import shutil
 from aps_load_merra import aps_load_merra
 from aps_weather_model_nan_check import aps_weather_model_nan_check
-import datetime
-import time
-import logging
+from hyp3lib import saa_func_lib as saa
 from hyp3lib.execute import execute
-
-
-# from joblib import Parallel, delayed
-# import multiprocessing
-# from multiprocessing import Pool
+from hyp3lib.get_dem import get_ll_dem
+from osgeo import gdal
 
 
 def get_DEM(geo_ref_file=None):
@@ -108,14 +103,6 @@ def get_DEM(geo_ref_file=None):
     nncols = x
     nnrows = y
     demres = trans[1]
-    ullat = trans[3]
-    lrlat = trans[3] + y * trans[5]
-    ullon = trans[0]
-    lrlon = trans[0] + x * trans[1]
-    xmin = min(ullon, lrlon)
-    xmax = max(ullon, lrlon)
-    ymin = min(ullat, lrlat)
-    ymax = max(ullat, lrlat)
 
     return (data, minlon, maxlon, minlat, maxlat, demres, nncols, nnrows)
 
@@ -159,7 +146,6 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
     path = aps.get_param('{}_datapath'.format(model_type))
     utc = float(aps.get_param('UTC_sat'))
     dates, tmp = aps.get_date_list()
-    n_dates = len(dates)
 
     if geo_ref_file is not None:
         if not os.path.isfile(geo_ref_file):
@@ -168,13 +154,8 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
 
     dem, xmin, xmax, ymin, ymax, smpres, nncols, nnrows = get_DEM(geo_ref_file)
 
-    lonmin = np.floor(xmin) - 1
-    lonmax = np.ceil(xmax) + 1
-    latmin = np.floor(ymin) - 1
-    latmax = np.ceil(ymax) + 1
-
     maxdem = np.ceil(np.max(np.max(dem)) / 100) * 100 + 100
-    cdslices = int(maxdem / vertres) + 1
+    cdslices = (maxdem // vertres) + 1
     cdI = [x for x in range(0, int(maxdem) + 1, vertres)]
 
     rounddem = np.round(dem / vertres)
@@ -195,7 +176,7 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
     date, time, frac = aps.times(utc, dates)
 
     input_file_names = aps.file_names(model_type, date, time, path)
-    length = int(len(input_file_names) / 2)
+    length = len(input_file_names) // 2
 
     for d in range(length):
         lasttime = datetime.datetime.now()
@@ -273,7 +254,6 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                 midy = int(round(np.mean(uylist)))
 
                 glocal = g[midx, midy, 0]
-                Rlocal = Re[midx, midy, 0]
 
                 del g
                 del Re
@@ -312,7 +292,7 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                         f = sp.interpolate.splrep(XI, Lw)
                         LwI = sp.interpolate.splev(cdI, f, der=0)
     
-                        Ld = 10 ** -6 * ((k1 * Rd / glocal) * (YPI - YPI[int(zref / zincr)]))
+                        Ld = 10 ** -6 * ((k1 * Rd / glocal) * (YPI - YPI[zref // zincr]))
                         f = sp.interpolate.splrep(XI, Ld)
                         LdI = sp.interpolate.splev(cdI, f, der=0)
 
@@ -339,20 +319,11 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                 cdstack_interp_dry = np.zeros((nnrows, nncols, cdslices), dtype=np.float32)
                 logging.info("processing dry stack")
                 for n in range(cdslices):
-                    #                    f = scipy.interpolate.interp2d(lonlist_matrix,latlist_matrix,cdstack_dry[:,:,n])
-                    #                    newslice = f(xivec,yivec)
-
                     tck = sp.interpolate.bisplrep(lonlist_matrix, latlist_matrix, cdstack_dry[:, :, n], s=3)
                     newslice = sp.interpolate.bisplev(yivec, xivec, tck)
 
                     cdstack_interp_dry[:, :, n] = np.flipud(newslice)
                 del cdstack_dry
-
-                #                Parallel(n_jobs=8)(delayed(inter2d)(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,cdstack_interp_dry,n)
-                #                           for n in range(cdslices))
-
-                #                pool = Pool(processes=8)
-                #                cdstack_interp_dry = [pool.apply(inter2d,args=(xivec,yivec,lonlist_matrix,latlist_matrix,cdstack,n)) for n in range(cdslices)]
 
                 cdstack_interp_wet = np.zeros((nnrows, nncols, cdslices), dtype=np.float32)
                 logging.info("processing wet stack")
@@ -361,14 +332,9 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                 latlist_matrix = latlist_matrix[:, 0]
 
                 for n in range(cdslices):
-                    #                    f = sp.interpolate.interp2d(lonlist_matrix,latlist_matrix,cdstack_wet[:,:,n])
-
-                    f = sp.interpolate.RectBivariateSpline(latlist_matrix, lonlist_matrix, cdstack_wet[:, :, n], kx=1,
-                                                           ky=1, s=0)
+                    f = sp.interpolate.RectBivariateSpline(latlist_matrix, lonlist_matrix,
+                                                           cdstack_wet[:, :, n], kx=1, ky=1, s=0)
                     newslice = f(yivec, xivec)
-
-                    #                    tck = sp.interpolate.bisplrep(lonlist_matrix,latlist_matrix,cdstack_wet[:,:,n],s=5)
-                    #                    newslice = sp.interpolate.bisplev(yivec,xivec,tck)
 
                     cdstack_interp_wet[:, :, n] = np.flipud(newslice)
                 del cdstack_wet

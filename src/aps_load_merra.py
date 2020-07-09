@@ -33,8 +33,9 @@
 #
 #####################
 import argparse
-from netCDF4 import Dataset as NetCDFFile
+
 import numpy as np
+from netCDF4 import Dataset as NetCDFFile
 
 
 def aps_load_merra(wfile):
@@ -47,16 +48,10 @@ def aps_load_merra(wfile):
     nc = NetCDFFile(wfile)
     qv = nc.variables['QV'][:]
     H = nc.variables['H'][:]
-    #    g0 = 9.80665
-    #    Geopot = H*g0
     lons = nc.variables['lon'][:]
     lats = nc.variables['lat'][:]
     Temp = nc.variables['T'][:]
     Plevs = nc.variables['lev'][:]
-    time = nc.variables['time'][:]
-
-    # Convert time to hours
-    time = time / 60
 
     # Update no data values with NANs
     Temp[Temp == missing_value] = np.nan

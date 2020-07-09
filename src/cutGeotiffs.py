@@ -28,10 +28,11 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 ###############################################################################
-import saa_func_lib as saa
-import re
-import logging
 import argparse
+import logging
+import re
+
+import saa_func_lib as saa
 from osgeo import gdal
 
 
