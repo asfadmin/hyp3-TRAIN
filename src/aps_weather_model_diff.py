@@ -40,64 +40,64 @@ import numpy as np
 import saa_func_lib as saa
 import logging
 
+
 def aps_weather_model_diff():
-    
     good_count = 0
     file_list = glob.glob('*_*_unw_phase.tif')
     total_count = len(file_list)
-    
+
     for myfile in file_list:
-        
+
         # get dates of this interferogram
-        t = re.split("_",myfile)
+        t = re.split("_", myfile)
         date1 = t[0][0:8]
         date2 = t[1][0:8]
-        
+
         # check for correction file
         name = date1 + "_" + date2 + "_correction.bin"
         if not os.path.isfile(name):
-            logging.info("No correction file found for dates {} and {}".format(date1,date2))
+            logging.info("No correction file found for dates {} and {}".format(date1, date2))
         else:
             # read interferogram phase file
             logging.info("Reading file {}".format(myfile))
-            (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(myfile))
+            (x, y, trans, proj, data) = saa.read_gdal_file(saa.open_gdal_file(myfile))
             flat_data = data.flatten()
-        
+
             # read phase correction file
             logging.info("Reading file {}".format(name))
-            correction = np.fromfile(name,dtype=np.float32)        
-            np.putmask(correction,data==0,0)
-                
+            correction = np.fromfile(name, dtype=np.float32)
+            np.putmask(correction, data == 0, 0)
+
             # subtract
             out = flat_data - correction
-            outdata = np.reshape(out,(y,x))
-        
+            outdata = np.reshape(out, (y, x))
+
             # write difference file
             name = date1 + "_" + date2 + "_unw_phase_corrected.tif"
-            saa.write_gdal_file_float(name,trans,proj,outdata)
-            
+            saa.write_gdal_file_float(name, trans, proj, outdata)
+
             good_count = good_count + 1
-            
+
     if (total_count == 0):
         logging.error("ERROR:  No unwrapped phase files (*_unw_phase.tif) found in current directory.")
         exit(1)
     if (good_count < total_count):
-        logging.warning("Warning:  Only {} out of {} unwrapped phase files had corrections calculated".format(good_count,total_count))
+        logging.warning(
+            "Warning:  Only {} out of {} unwrapped phase files had corrections calculated".format(good_count,
+                                                                                                  total_count))
     if (good_count == total_count):
         logging.info("Done creating corrected geotiffs")
 
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='aps_weather_model_diff',
+                                     description='Subtract phase delay from interferogram phase')
+    args = parser.parse_args()
 
-  parser = argparse.ArgumentParser(prog='aps_weather_model_diff',
-    description='Subtract phase delay from interferogram phase')
-  args = parser.parse_args()
+    logFile = "aps_weather_model_diff_log.txt"
+    logging.basicConfig(filename=logFile, format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+    logging.getLogger().addHandler(logging.StreamHandler())
+    logging.info("Starting run")
 
-  logFile = "aps_weather_model_diff_log.txt"
-  logging.basicConfig(filename=logFile,format='%(asctime)s - %(levelname)s - %(message)s',
-                      datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
-  logging.getLogger().addHandler(logging.StreamHandler())
-  logging.info("Starting run")
-
-  aps_weather_model_diff()
-
-
+    aps_weather_model_diff()

@@ -41,53 +41,58 @@ import datetime
 import time
 import logging
 
+
 def timestamp(date):
     return time.mktime(date.timetuple())
 
+
 def get_param(target):
-    f = open('parms_aps.txt','r')
+    f = open('parms_aps.txt', 'r')
     logging.info("Reading {TARG} from file parms_aps.txt".format(TARG=target))
     for line in f:
         if target in line:
             t = line.split(':')
-            return(t[1].strip())
-    logging.error("ERROR: aps_weather_model was unable to find parameter {PARM} in the parms_aps.txt file".format(PARM=target)) 
+            return (t[1].strip())
+    logging.error(
+        "ERROR: aps_weather_model was unable to find parameter {PARM} in the parms_aps.txt file".format(PARM=target))
     logging.error("ERROR: Please add this parameter to your parms_aps.txt file and try again")
     exit(1)
 
-def get_range(target,geo_ref_file=None):
+
+def get_range(target, geo_ref_file=None):
     if geo_ref_file is not None and ".tif" in geo_ref_file:
-        logging.info("Reading {TARG} from file {FILE}".format(TARG=target,FILE=geo_ref_file))
+        logging.info("Reading {TARG} from file {FILE}".format(TARG=target, FILE=geo_ref_file))
         if target == 'region_lat_range':
-            (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
+            (x, y, trans, proj, data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullat = trans[3]
-            lrlat = trans[3] + y*trans[5]
-            mylist = [ullat,lrlat]
-            return mylist 
+            lrlat = trans[3] + y * trans[5]
+            mylist = [ullat, lrlat]
+            return mylist
         elif target == 'region_lon_range':
-            (x,y,trans,proj,data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
+            (x, y, trans, proj, data) = saa.read_gdal_file(saa.open_gdal_file(geo_ref_file))
             ullon = trans[0]
-            lrlon = trans[0] + x*trans[1]
-            mylist = [ullon,lrlon]
+            lrlon = trans[0] + x * trans[1]
+            mylist = [ullon, lrlon]
             return mylist
         else:
             logging.error("ERROR: Unknown parameter {PARM} in get_range function".format(PARM=target))
             exit(1)
     else:
         logging.info("Reading {TARG} from file params_aps.txt".format(TARG=target))
-        f = open('parms_aps.txt','r')
+        f = open('parms_aps.txt', 'r')
         for line in f:
             if target in line:
                 t = line.split(':')
                 s = t[1].split()
-                mylist = [float(s[0]),float(s[1])]
+                mylist = [float(s[0]), float(s[1])]
                 return mylist
         logging.error("ERROR: Unable to find parameter {PARM}".format(PARM=target))
         exit(1)
 
+
 def get_date_list():
     # get list of interferograms
-    datelist=[]
+    datelist = []
     origin = get_param('date_origin')
     if origin == 'asf':
         for myfile in glob.glob('*_*_unw_phase.tif'):
@@ -97,9 +102,9 @@ def get_date_list():
     elif origin == 'file':
         fname = get_param('ifgday_file')
         if os.path.isfile(fname):
-            f = open(fname,'r')
+            f = open(fname, 'r')
             for line in f:
-                t = re.split(' ',line)
+                t = re.split(' ', line)
                 datelist.append(t[0].strip())
                 datelist.append(t[1].strip())
             f.close()
@@ -122,16 +127,17 @@ def get_date_list():
 
     return shortlist, datelist
 
-def times(utc,datelist):
-    t_before = int(np.floor(float(utc)/21600))
-    t_after = int(np.ceil(float(utc)/21600))
 
-    temp = utc-21600*t_before
-    f_after = temp/21600
+def times(utc, datelist):
+    t_before = int(np.floor(float(utc) / 21600))
+    t_after = int(np.ceil(float(utc) / 21600))
+
+    temp = utc - 21600 * t_before
+    f_after = temp / 21600
     if np.isnan(f_after):
         f_after = 1
     f_before = 1 - f_after
-    timelist = ['0000','0600','1200','1800','0000']
+    timelist = ['0000', '0600', '1200', '1800', '0000']
     n_SAR = len(datelist)
     date_list = []
     time_list = []
@@ -143,25 +149,24 @@ def times(utc,datelist):
     for i in range(len(datelist)):
         if t_after == 4:
             # must increment the date by 1 day
-            t=datetime.datetime.strptime(date_list[i][0:8],'%Y%m%d')
-            newdate= t + datetime.timedelta(1)
+            t = datetime.datetime.strptime(date_list[i][0:8], '%Y%m%d')
+            newdate = t + datetime.timedelta(1)
             thisdate = newdate.strftime('%Y%m%d')
         else:
             thisdate = date_list[i]
         date_list.append(thisdate)
         time_list.append(timelist[t_after])
         frac_list.append(f_after)
-    return(date_list,time_list,frac_list)
+    return (date_list, time_list, frac_list)
 
-def file_names(model_type,date,time,datapath):
+
+def file_names(model_type, date, time, datapath):
     output_list = []
     for i in range(len(date)):
-        ymd=date[i]
+        ymd = date[i]
         thistime = time[i]
-        hour=thistime[0:2]
+        hour = thistime[0:2]
         path = datapath + "/" + ymd + "/"
-        output = "{PATH}{TYPE}_{YMD}_{HOUR}.nc4".format(PATH=path,TYPE=model_type.upper(),YMD=ymd,HOUR=hour)
+        output = "{PATH}{TYPE}_{YMD}_{HOUR}.nc4".format(PATH=path, TYPE=model_type.upper(), YMD=ymd, HOUR=hour)
         output_list.append(output)
     return output_list
-    
-
