@@ -43,7 +43,8 @@ import shutil
 
 import aps_weather_model_lib as aps
 import numpy as np
-import scipy as sp
+from scipy import interpolate, integrate
+
 from aps_load_merra import aps_load_merra
 from aps_weather_model_nan_check import aps_weather_model_nan_check
 from hyp3lib import saa_func_lib as saa
@@ -155,7 +156,7 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
     dem, xmin, xmax, ymin, ymax, smpres, nncols, nnrows = get_DEM(geo_ref_file)
 
     maxdem = np.ceil(np.max(np.max(dem)) / 100) * 100 + 100
-    cdslices = (maxdem // vertres) + 1
+    cdslices = int(maxdem / vertres) + 1
     cdI = [x for x in range(0, int(maxdem) + 1, vertres)]
 
     rounddem = np.round(dem / vertres)
@@ -272,29 +273,29 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                         # interpolate at res zincr before doing integration
                         X = np.squeeze(Z[xn, yn, :])
                         Ye = np.squeeze(e[xn, yn, :])
-                        f = sp.interpolate.splrep(X, Ye)
-                        YeI = sp.interpolate.splev(XI, f, der=0)
+                        f = interpolate.splrep(X, Ye)
+                        YeI = interpolate.splev(XI, f, der=0)
                         YeI = YeI * 100
 
                         Yp = np.squeeze(P[xn, yn, :])
-                        f = sp.interpolate.splrep(X, Yp)
-                        YPI = sp.interpolate.splev(XI, f, der=0)
+                        f = interpolate.splrep(X, Yp)
+                        YPI = interpolate.splev(XI, f, der=0)
                         YPI = YPI * 100
 
                         YT = np.squeeze(Temp[xn, yn, :])
-                        f = sp.interpolate.splrep(X, YT)
-                        YTI = sp.interpolate.splev(XI, f, der=0)
+                        f = interpolate.splrep(X, YT)
+                        YTI = interpolate.splev(XI, f, der=0)
 
                         tmp1 = (k2 - (Rd * k1 / Rv)) * YeI / YTI + k3 * YeI / (YTI * YTI)
                         Lw = (10 ** -6) * -1 * np.flipud(
-                            sp.integrate.cumtrapz(np.flipud(tmp1), np.flipud(XI), initial=0))
+                            integrate.cumtrapz(np.flipud(tmp1), np.flipud(XI), initial=0))
 
-                        f = sp.interpolate.splrep(XI, Lw)
-                        LwI = sp.interpolate.splev(cdI, f, der=0)
+                        f = interpolate.splrep(XI, Lw)
+                        LwI = interpolate.splev(cdI, f, der=0)
     
                         Ld = 10 ** -6 * ((k1 * Rd / glocal) * (YPI - YPI[zref // zincr]))
-                        f = sp.interpolate.splrep(XI, Ld)
-                        LdI = sp.interpolate.splev(cdI, f, der=0)
+                        f = interpolate.splrep(XI, Ld)
+                        LdI = interpolate.splev(cdI, f, der=0)
 
                         cdstack_dry[j, i, :] = LdI
                         cdstack_wet[j, i, :] = LwI
@@ -319,8 +320,8 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                 cdstack_interp_dry = np.zeros((nnrows, nncols, cdslices), dtype=np.float32)
                 logging.info("processing dry stack")
                 for n in range(cdslices):
-                    tck = sp.interpolate.bisplrep(lonlist_matrix, latlist_matrix, cdstack_dry[:, :, n], s=3)
-                    newslice = sp.interpolate.bisplev(yivec, xivec, tck)
+                    tck = interpolate.bisplrep(lonlist_matrix, latlist_matrix, cdstack_dry[:, :, n], s=3)
+                    newslice = interpolate.bisplev(yivec, xivec, tck)
 
                     cdstack_interp_dry[:, :, n] = np.flipud(newslice)
                 del cdstack_dry
@@ -332,7 +333,7 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
                 latlist_matrix = latlist_matrix[:, 0]
 
                 for n in range(cdslices):
-                    f = sp.interpolate.RectBivariateSpline(latlist_matrix, lonlist_matrix,
+                    f = interpolate.RectBivariateSpline(latlist_matrix, lonlist_matrix,
                                                            cdstack_wet[:, :, n], kx=1, ky=1, s=0)
                     newslice = f(yivec, xivec)
 

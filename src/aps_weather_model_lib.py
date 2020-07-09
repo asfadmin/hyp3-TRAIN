@@ -131,8 +131,8 @@ def get_date_list():
 
 
 def times(utc, datelist):
-    t_before = np.floor(float(utc) // 21600)
-    t_after = np.ceil(float(utc) // 21600)
+    t_before = int(np.floor(float(utc) / 21600))
+    t_after = int(np.ceil(float(utc) / 21600))
 
     temp = utc - 21600 * t_before
     f_after = temp / 21600
