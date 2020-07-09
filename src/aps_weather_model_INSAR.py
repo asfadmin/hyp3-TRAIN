@@ -35,7 +35,7 @@
 import os, re
 import argparse
 import aps_weather_model_lib as aps
-import saa_func_lib as saa
+import hyp3lib.saa_func_lib as saa
 import numpy as np
 import scipy as sp
 import scipy.integrate
@@ -204,7 +204,7 @@ def aps_weather_model_INSAR(model_type, geo_ref_file=None):
         region_res = None
     dates, datelist = aps.get_date_list()
     n_dates = len(dates)
-    n_igrams = len(datelist) / 2
+    n_igrams = int(len(datelist) / 2)
     dates_master = datelist[0:len(datelist) + 1:2]
     dates_slave = datelist[1:len(datelist) + 1:2]
     idx_master = []

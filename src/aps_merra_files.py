@@ -33,7 +33,7 @@
 #
 #####################
 import os
-from execute import execute
+from hyp3lib.execute import execute
 import argparse
 import glob
 from os.path import expanduser

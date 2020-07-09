@@ -63,14 +63,14 @@ def aps_weather_model_nan_check(Temp, e, P, longrid, latgrid):
         n_nan = n_pixels - sum(sum(count))
         if n_nan < n_pixels - 3:
             points = np.zeros((len(lon[~ix_nan]), 2))
-            points[:, 0] = np.reshape(lon[~ix_nan], -1, 1)
-            points[:, 1] = np.reshape(lat[~ix_nan], -1, 1)
+            points[:, 0] = np.reshape(lon[~ix_nan], -1, order='C')
+            points[:, 1] = np.reshape(lat[~ix_nan], -1, order='C')
             temp_data = Temp[:, :, step_level[k]]
-            data = np.reshape(temp_data[~ix_nan], -1, 1)
+            data = np.reshape(temp_data[~ix_nan], -1, order='C')
             temp_data = griddata(points, data, grid, 'nearest')
             Temp[:, :, step_level[k]] = np.reshape(temp_data, (dims[0], dims[1]))
             temp_data = e[:, :, step_level[k]]
-            data = np.reshape(temp_data[~ix_nan], -1, 1)
+            data = np.reshape(temp_data[~ix_nan], -1, order='C')
             temp_data = griddata(points, data, grid, 'nearest')
             e[:, :, step_level[k]] = np.reshape(temp_data, (dims[0], dims[1]))
         elif n_nan == n_pixels:

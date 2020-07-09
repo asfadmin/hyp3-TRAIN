@@ -37,7 +37,7 @@ import argparse
 from osgeo import gdal
 import glob
 import numpy as np
-import saa_func_lib as saa
+import hyp3lib.saa_func_lib as saa
 import logging
 
 

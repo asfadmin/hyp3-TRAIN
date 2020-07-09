@@ -35,11 +35,11 @@
 #
 #####################
 import os
-from get_dem import get_ll_dem
+from hyp3lib.get_dem import get_ll_dem
 from osgeo import gdal
 import argparse
 import aps_weather_model_lib as aps
-import saa_func_lib as saa
+from hyp3lib import saa_func_lib as saa
 import numpy as np
 import scipy as sp
 import scipy.integrate
@@ -49,7 +49,7 @@ from aps_weather_model_nan_check import aps_weather_model_nan_check
 import datetime
 import time
 import logging
-from execute import execute
+from hyp3lib.execute import execute
 
 
 # from joblib import Parallel, delayed
@@ -195,7 +195,7 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
     date, time, frac = aps.times(utc, dates)
 
     input_file_names = aps.file_names(model_type, date, time, path)
-    length = len(input_file_names) / 2
+    length = int(len(input_file_names) / 2)
 
     for d in range(length):
         lasttime = datetime.datetime.now()
@@ -311,7 +311,8 @@ def aps_weather_model_SAR(model_type, geo_ref_file=None):
 
                         f = sp.interpolate.splrep(XI, Lw)
                         LwI = sp.interpolate.splev(cdI, f, der=0)
-                        Ld = 10 ** -6 * ((k1 * Rd / glocal) * (YPI - YPI[zref / zincr]))
+    
+                        Ld = 10 ** -6 * ((k1 * Rd / glocal) * (YPI - YPI[int(zref / zincr)]))
                         f = sp.interpolate.splrep(XI, Ld)
                         LdI = sp.interpolate.splev(cdI, f, der=0)
 

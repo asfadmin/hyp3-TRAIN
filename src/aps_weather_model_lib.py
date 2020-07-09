@@ -35,7 +35,7 @@
 import glob
 import os
 import re
-import saa_func_lib as saa
+from hyp3lib import saa_func_lib as saa
 import numpy as np
 import datetime
 import time
