@@ -94,11 +94,11 @@ def aps_merra_files(order_flag, geo_ref_file=None):
         hour = thistime[0:2]
         year = ymd[0:4]
         month = ymd[4:6]
-        if year < 1993:
+        if int(year) < 1993:
             series_type = 100
-        elif year < 2001:
+        elif int(year) < 2001:
             series_type = 200
-        elif year < 2011:
+        elif int(year) < 2011:
             series_type = 300
         else:
             series_type = 400
